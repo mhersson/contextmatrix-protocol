@@ -51,3 +51,29 @@ func TestErrorCodesAreStable(t *testing.T) {
 		t.Error("stable code constants changed — this breaks clients")
 	}
 }
+
+func TestChatStartResponseWireShape(t *testing.T) {
+	b, err := json.Marshal(ChatStartResponse{OK: true, ContainerID: "abc"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != `{"ok":true,"container_id":"abc"}` {
+		t.Errorf("wire drift: %s", b)
+	}
+}
+
+func TestErrorResponseWireShape(t *testing.T) {
+	b, err := json.Marshal(ErrorResponse{OK: false, Code: CodeNotFound, Message: "no such card"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != `{"ok":false,"code":"not_found","message":"no such card"}` {
+		t.Errorf("wire drift: %s", b)
+	}
+}
+
+func TestProtocolVersion(t *testing.T) {
+	if ProtocolVersion != "1" || VersionHeader != "X-Protocol-Version" {
+		t.Error("version contract changed")
+	}
+}
