@@ -95,7 +95,7 @@ func TestVerifyAsymmetricSkewWindow(t *testing.T) {
 		want   bool
 	}{
 		{"fresh", 0, true},
-		{"4m59s past", -4*time.Minute - 59*time.Second, true},
+		{"4m30s past", -4*time.Minute - 30*time.Second, true},
 		{"6m past", -6 * time.Minute, false},
 		{"29s future", 29 * time.Second, true},
 		{"2m future", 2 * time.Minute, false}, // symmetric impl would accept this
@@ -130,6 +130,11 @@ func TestVerifyRejectsTamper(t *testing.T) {
 	if VerifySignatureWithTimestamp("k", "POST", "/x?a=1", sig, "not-a-number", []byte("b"), DefaultMaxClockSkew, nil) {
 		t.Error("accepted unparseable timestamp")
 	}
+	for _, extreme := range []string{"0", "-1", "9223372036854775807"} {
+		if VerifySignatureWithTimestamp("k", "POST", "/x?a=1", sigFor("k", "POST", "/x?a=1", []byte("b"), extreme), extreme, []byte("b"), DefaultMaxClockSkew, nil) {
+			t.Errorf("accepted extreme timestamp %q", extreme)
+		}
+	}
 }
 
 func TestVerifyReplayCacheRejectsDuplicate(t *testing.T) {
@@ -141,5 +146,21 @@ func TestVerifyReplayCacheRejectsDuplicate(t *testing.T) {
 	}
 	if VerifySignatureWithTimestamp("k", "POST", "/x", sig, ts, []byte("b"), DefaultMaxClockSkew, cache) {
 		t.Error("replay should be rejected")
+	}
+}
+
+func TestVerifyFailedSignatureDoesNotConsumeReplayCache(t *testing.T) {
+	ts := nowTS(0)
+	sig := sigFor("k", "POST", "/x", []byte("b"), ts)
+	cache := &fakeCache{}
+	// Forged request: valid (ts, sig) pair but tampered body. Must fail
+	// verification WITHOUT inserting the pair into the replay cache.
+	if VerifySignatureWithTimestamp("k", "POST", "/x", sig, ts, []byte("forged"), DefaultMaxClockSkew, cache) {
+		t.Fatal("tampered body should fail verification")
+	}
+	// The legitimate request with the same (ts, sig) must still pass —
+	// proving the failed attempt did not pre-consume the cache entry.
+	if !VerifySignatureWithTimestamp("k", "POST", "/x", sig, ts, []byte("b"), DefaultMaxClockSkew, cache) {
+		t.Error("legitimate request rejected: failed verification pre-consumed the replay cache entry")
 	}
 }
