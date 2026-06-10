@@ -1,0 +1,12 @@
+name: CI
+on: [push, workflow_dispatch]
+jobs:
+  go-checks:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - run: go vet ./...
+      - run: go test ./...
