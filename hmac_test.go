@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -61,5 +62,84 @@ func TestSkewConstants(t *testing.T) {
 	}
 	if DefaultMaxFutureSkew != 30*time.Second {
 		t.Errorf("DefaultMaxFutureSkew = %v, want 30s", DefaultMaxFutureSkew)
+	}
+}
+
+type fakeCache struct{ seen map[string]bool }
+
+func (f *fakeCache) CheckAndInsert(ts, sig string) bool {
+	k := ts + "|" + sig
+	if f.seen[k] {
+		return true
+	}
+	if f.seen == nil {
+		f.seen = map[string]bool{}
+	}
+	f.seen[k] = true
+
+	return false
+}
+
+func sigFor(key, method, uri string, body []byte, ts string) string {
+	return SignPayloadWithTimestamp(key, method, uri, body, ts)
+}
+
+func nowTS(offset time.Duration) string {
+	return strconv.FormatInt(time.Now().Add(offset).Unix(), 10)
+}
+
+func TestVerifyAsymmetricSkewWindow(t *testing.T) {
+	cases := []struct {
+		name   string
+		offset time.Duration
+		want   bool
+	}{
+		{"fresh", 0, true},
+		{"4m59s past", -4*time.Minute - 59*time.Second, true},
+		{"6m past", -6 * time.Minute, false},
+		{"29s future", 29 * time.Second, true},
+		{"2m future", 2 * time.Minute, false}, // symmetric impl would accept this
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			ts := nowTS(c.offset)
+			sig := sigFor("k", "POST", "/x", []byte("b"), ts)
+			got := VerifySignatureWithTimestamp("k", "POST", "/x", sig, ts, []byte("b"), DefaultMaxClockSkew, nil)
+			if got != c.want {
+				t.Errorf("offset %v: got %v, want %v", c.offset, got, c.want)
+			}
+		})
+	}
+}
+
+func TestVerifyRejectsTamper(t *testing.T) {
+	ts := nowTS(0)
+	sig := sigFor("k", "POST", "/x?a=1", []byte("b"), ts)
+	if VerifySignatureWithTimestamp("k", "POST", "/x?a=2", sig, ts, []byte("b"), DefaultMaxClockSkew, nil) {
+		t.Error("accepted altered query string")
+	}
+	if VerifySignatureWithTimestamp("k", "GET", "/x?a=1", sig, ts, []byte("b"), DefaultMaxClockSkew, nil) {
+		t.Error("accepted altered method")
+	}
+	if VerifySignatureWithTimestamp("k", "POST", "/x?a=1", sig, ts, []byte("B"), DefaultMaxClockSkew, nil) {
+		t.Error("accepted altered body")
+	}
+	if VerifySignatureWithTimestamp("wrong", "POST", "/x?a=1", sig, ts, []byte("b"), DefaultMaxClockSkew, nil) {
+		t.Error("accepted wrong key")
+	}
+	if VerifySignatureWithTimestamp("k", "POST", "/x?a=1", sig, "not-a-number", []byte("b"), DefaultMaxClockSkew, nil) {
+		t.Error("accepted unparseable timestamp")
+	}
+}
+
+func TestVerifyReplayCacheRejectsDuplicate(t *testing.T) {
+	ts := nowTS(0)
+	sig := sigFor("k", "POST", "/x", []byte("b"), ts)
+	cache := &fakeCache{}
+	if !VerifySignatureWithTimestamp("k", "POST", "/x", sig, ts, []byte("b"), DefaultMaxClockSkew, cache) {
+		t.Fatal("first verification should pass")
+	}
+	if VerifySignatureWithTimestamp("k", "POST", "/x", sig, ts, []byte("b"), DefaultMaxClockSkew, cache) {
+		t.Error("replay should be rejected")
 	}
 }
