@@ -53,9 +53,9 @@ type EndSessionPayload struct {
 }
 
 // RefreshKnowledgePayload is sent by ContextMatrix to start a KB
-// refresh container for (project, repo). Mirrors runner.RefreshKnowledgePayload
-// on the CM side; the JSON wire format is the contract. No card_id — the
-// (project, repo) pair is the job key.
+// refresh container for (project, repo). Retired with the KB machinery in
+// C3; rides along until then. No card_id — the (project, repo) pair is the
+// job key.
 type RefreshKnowledgePayload struct {
 	Project       string   `json:"project"`
 	Repo          string   `json:"repo"`

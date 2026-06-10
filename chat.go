@@ -1,6 +1,6 @@
 package protocol
 
-// ChatStartPayload is received from ContextMatrix to start a chat-mode container.
+// ChatStartPayload is sent by ContextMatrix to start a chat-mode container.
 type ChatStartPayload struct {
 	SessionID string `json:"session_id"`
 	Project   string `json:"project,omitempty"`
@@ -28,8 +28,8 @@ type ChatStartPayload struct {
 	Primer string `json:"primer,omitempty"`
 }
 
-// ChatResumeContext mirrors chat.ResumeContext on the CM side. Wire shape
-// only — the runner doesn't import CM types.
+// ChatResumeContext is the rehydration payload wire shape: the prior
+// transcript handed to a resumed chat container.
 type ChatResumeContext struct {
 	Turns   []ChatResumeTurn `json:"turns"`
 	Clipped bool             `json:"clipped"`
@@ -43,7 +43,7 @@ type ChatResumeTurn struct {
 	Content string `json:"content"`
 }
 
-// ChatEndPayload is received from ContextMatrix to close the stdin of a running
+// ChatEndPayload is sent by ContextMatrix to close the stdin of a running
 // chat container so claude receives EOF and exits.
 type ChatEndPayload struct {
 	SessionID string `json:"session_id"`
