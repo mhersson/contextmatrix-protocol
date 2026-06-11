@@ -13,9 +13,12 @@ type LogEntry struct {
 	Project   string    `json:"project,omitempty"`
 	SessionID string    `json:"session_id,omitempty"`
 	// Type is one of: text, thinking, tool_call, user_question, stderr,
-	// system, user, usage. "user_question" is LEGACY (no longer emitted);
-	// the tag and ToolUseID are retained for wire compatibility with
-	// persisted entries.
+	// system, user, usage. "user" is a HITL chat-input message published
+	// directly by the backend's /message handler (bypasses the backend's
+	// output redaction). "usage" frames carry Usage and Model with empty
+	// Content — content-less metadata frames. "user_question" is LEGACY
+	// (no longer emitted); the tag and ToolUseID are retained for wire
+	// compatibility with persisted entries.
 	Type      string         `json:"type"`
 	Content   string         `json:"content,omitempty"`
 	ToolUseID string         `json:"tool_use_id,omitempty"`
@@ -24,7 +27,9 @@ type LogEntry struct {
 }
 
 // LogTokenUsage carries per-turn token accounting on "usage"-type frames.
-// Per-turn, NOT cumulative session totals.
+// Per-turn, NOT cumulative session totals. InputTokens + CacheReadTokens +
+// CacheCreateTokens approximates the prompt size the model actually
+// processed; consumers typically display that sum as "context used".
 type LogTokenUsage struct {
 	InputTokens       int64 `json:"input_tokens"`
 	OutputTokens      int64 `json:"output_tokens"`
