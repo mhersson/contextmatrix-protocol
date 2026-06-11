@@ -122,3 +122,47 @@ func TestProtocolVersion(t *testing.T) {
 		t.Error("version contract changed")
 	}
 }
+
+func TestStatusCallbackPayloadWireShape(t *testing.T) {
+	b, err := json.Marshal(StatusCallbackPayload{
+		CardID: "CM-001", Project: "alpha", RunnerStatus: "running", Message: "started",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"card_id":"CM-001","project":"alpha","runner_status":"running","message":"started"}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+	// message omits when empty
+	b, _ = json.Marshal(StatusCallbackPayload{CardID: "c", Project: "p", RunnerStatus: "failed"})
+	if string(b) != `{"card_id":"c","project":"p","runner_status":"failed"}` {
+		t.Errorf("omitempty drift: %s", b)
+	}
+}
+
+func TestSkillEngagedPayloadWireShape(t *testing.T) {
+	b, err := json.Marshal(SkillEngagedPayload{CardID: "CM-001", Project: "alpha", SkillName: "go-development"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"card_id":"CM-001","project":"alpha","skill_name":"go-development"}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+}
+
+func TestKnowledgeStatusPayloadWireShape(t *testing.T) {
+	b, err := json.Marshal(KnowledgeStatusPayload{Project: "alpha", Repo: "r1", State: "succeeded"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"project":"alpha","repo":"r1","state":"succeeded"}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+	b, _ = json.Marshal(KnowledgeStatusPayload{Project: "p", Repo: "r", State: "failed", Error: "boom"})
+	if string(b) != `{"project":"p","repo":"r","state":"failed","error":"boom"}` {
+		t.Errorf("error field drift: %s", b)
+	}
+}
