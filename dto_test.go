@@ -3,6 +3,7 @@ package protocol
 import (
 	"encoding/json"
 	"testing"
+	"time"
 )
 
 // The wire shapes are the contract: field tags must match what cmr's
@@ -120,5 +121,90 @@ func TestErrorResponseWireShape(t *testing.T) {
 func TestProtocolVersion(t *testing.T) {
 	if ProtocolVersion != "1" || VersionHeader != "X-Protocol-Version" {
 		t.Error("version contract changed")
+	}
+}
+
+func TestStatusCallbackPayloadWireShape(t *testing.T) {
+	b, err := json.Marshal(StatusCallbackPayload{
+		CardID: "CM-001", Project: "alpha", RunnerStatus: "running", Message: "started",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"card_id":"CM-001","project":"alpha","runner_status":"running","message":"started"}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+	// message omits when empty
+	b, err = json.Marshal(StatusCallbackPayload{CardID: "c", Project: "p", RunnerStatus: "failed"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != `{"card_id":"c","project":"p","runner_status":"failed"}` {
+		t.Errorf("omitempty drift: %s", b)
+	}
+}
+
+func TestSkillEngagedPayloadWireShape(t *testing.T) {
+	b, err := json.Marshal(SkillEngagedPayload{CardID: "CM-001", Project: "alpha", SkillName: "go-development"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"card_id":"CM-001","project":"alpha","skill_name":"go-development"}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+}
+
+func TestKnowledgeStatusPayloadWireShape(t *testing.T) {
+	b, err := json.Marshal(KnowledgeStatusPayload{Project: "alpha", Repo: "r1", State: "succeeded"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"project":"alpha","repo":"r1","state":"succeeded"}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+	b, err = json.Marshal(KnowledgeStatusPayload{Project: "p", Repo: "r", State: "failed", Error: "boom"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != `{"project":"p","repo":"r","state":"failed","error":"boom"}` {
+		t.Errorf("error field drift: %s", b)
+	}
+}
+
+func TestLogEntryWireShape(t *testing.T) {
+	e := LogEntry{
+		Timestamp: time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC),
+		CardID:    "CM-001",
+		Project:   "alpha",
+		SessionID: "s1",
+		Type:      "text",
+		Content:   "hi",
+		ToolUseID: "tu1",
+		Usage: &LogTokenUsage{
+			InputTokens: 1, OutputTokens: 2, CacheReadTokens: 3, CacheCreateTokens: 4,
+		},
+		Model: "claude-sonnet-4-6",
+	}
+	b, err := json.Marshal(e)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"ts":"2026-01-02T03:04:05Z","card_id":"CM-001","project":"alpha",` +
+		`"session_id":"s1","type":"text","content":"hi","tool_use_id":"tu1",` +
+		`"usage":{"input_tokens":1,"output_tokens":2,"cache_read_tokens":3,` +
+		`"cache_creation_tokens":4},"model":"claude-sonnet-4-6"}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+	// minimal frame: everything optional except ts and type
+	b, err = json.Marshal(LogEntry{Timestamp: time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC), Type: "system"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != `{"ts":"2026-01-02T03:04:05Z","type":"system"}` {
+		t.Errorf("omitempty drift: %s", b)
 	}
 }
