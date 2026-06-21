@@ -45,3 +45,33 @@ func TestSelectionContextEmptyOmits(t *testing.T) {
 		t.Errorf("empty SelectionContext should marshal to {}, got %s", b)
 	}
 }
+
+func TestTriggerPayloadSelectionOmittedWhenNil(t *testing.T) {
+	p := TriggerPayload{CardID: "CM-001", Project: "alpha", RepoURL: "r"}
+	b, err := json.Marshal(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"card_id":"CM-001","project":"alpha","repo_url":"r"}`
+	if string(b) != want {
+		t.Errorf("nil Selection must be omitted:\n got %s\nwant %s", b, want)
+	}
+}
+
+func TestTriggerPayloadSelectionRoundTrip(t *testing.T) {
+	p := TriggerPayload{
+		CardID: "CM-001", Project: "alpha", RepoURL: "r",
+		Selection: &SelectionContext{Blacklist: []string{"x"}},
+	}
+	b, err := json.Marshal(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got TriggerPayload
+	if err := json.Unmarshal(b, &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Selection == nil || len(got.Selection.Blacklist) != 1 || got.Selection.Blacklist[0] != "x" {
+		t.Errorf("Selection did not round-trip: %+v", got.Selection)
+	}
+}
