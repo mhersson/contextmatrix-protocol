@@ -11,6 +11,9 @@ type TriggerPayload struct {
 	Interactive bool      `json:"interactive,omitempty"`
 	Model       string    `json:"model,omitempty"`
 	TaskSkills  *[]string `json:"task_skills,omitempty"`
+	// Selection carries auto-selection inputs for the agent backend
+	// (candidates, favorites, blacklist). Nil for the runner backend.
+	Selection *SelectionContext `json:"selection,omitempty"`
 }
 
 // KillPayload is sent by ContextMatrix to stop a specific task.
