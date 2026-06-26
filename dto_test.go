@@ -156,24 +156,6 @@ func TestSkillEngagedPayloadWireShape(t *testing.T) {
 	}
 }
 
-func TestKnowledgeStatusPayloadWireShape(t *testing.T) {
-	b, err := json.Marshal(KnowledgeStatusPayload{Project: "alpha", Repo: "r1", State: "succeeded"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := `{"project":"alpha","repo":"r1","state":"succeeded"}`
-	if string(b) != want {
-		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
-	}
-	b, err = json.Marshal(KnowledgeStatusPayload{Project: "p", Repo: "r", State: "failed", Error: "boom"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(b) != `{"project":"p","repo":"r","state":"failed","error":"boom"}` {
-		t.Errorf("error field drift: %s", b)
-	}
-}
-
 func TestLogEntryWireShape(t *testing.T) {
 	e := LogEntry{
 		Timestamp: time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC),

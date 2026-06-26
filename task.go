@@ -54,19 +54,3 @@ type EndSessionPayload struct {
 	CardID  string `json:"card_id"`
 	Project string `json:"project"`
 }
-
-// RefreshKnowledgePayload is sent by ContextMatrix to start a KB
-// refresh container for (project, repo). Retired with the KB machinery in
-// C3; rides along until then. No card_id — the (project, repo) pair is the
-// job key.
-type RefreshKnowledgePayload struct {
-	Project       string   `json:"project"`
-	Repo          string   `json:"repo"`
-	RepoURL       string   `json:"repo_url"`
-	BaseBranch    string   `json:"base_branch,omitempty"`
-	AgentID       string   `json:"agent_id"`
-	OverwriteDocs []string `json:"overwrite_docs,omitempty"`
-	MCPAPIKey     string   `json:"mcp_api_key,omitempty"`
-	RunnerImage   string   `json:"runner_image,omitempty"`
-	Model         string   `json:"model,omitempty"`
-}
