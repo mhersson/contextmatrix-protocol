@@ -2,7 +2,7 @@
 
 The CM↔backend wire contract: webhook DTOs, HMAC signing/verification,
 stable error codes, protocol version. Imported by contextmatrix,
-contextmatrix-runner, contextmatrix-agent, and (later) contextmatrix-chat.
+contextmatrix-runner, and contextmatrix-agent.
 
 - **Stdlib only.** No dependencies, ever.
 - **Forward-compatible by discipline:** new fields are `omitempty`, decoders
@@ -17,8 +17,8 @@ index points at the file that owns each part:
 
 | File            | Contract                                                                              |
 | --------------- | ------------------------------------------------------------------------------------- |
-| `task.go`       | CM→backend task lifecycle: trigger, kill, stop-all, message, promote, end-session, refresh-knowledge. |
-| `callback.go`   | Backend→CM callback bodies: status, skill-engaged, knowledge-status.                  |
+| `task.go`       | CM→backend task lifecycle: trigger, kill, stop-all, message, promote, end-session.    |
+| `callback.go`   | Backend→CM callback bodies: status, skill-engaged.                                    |
 | `selection.go`  | Model-selection inputs shipped to the agent backend: candidates, favorites, blacklist. |
 | `logentry.go`   | One `data:` frame on a backend's `/logs` SSE stream, plus per-turn token usage.       |
 | `chat.go`       | Chat-mode container payloads: start, resume, end, and the start response.             |

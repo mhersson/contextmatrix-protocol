@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-// The wire shapes are the contract: field tags must match what cmr's
-// webhook handler decodes today (cmr internal/webhook/types.go).
+// The wire shapes are the contract: field tags must match what
+// contextmatrix-runner's webhook handler decodes (internal/webhook/types.go).
 func TestTriggerPayloadWireShape(t *testing.T) {
 	skills := []string{"s1"}
 	p := TriggerPayload{
@@ -36,8 +36,8 @@ func TestMessagePayloadIsChat(t *testing.T) {
 	}
 }
 
-// Pins sanctioned behavior-change #2 of the A1 extraction: MessagePayload
-// carries session_id and omits empty card_id/project/message_id.
+// Pins the MessagePayload wire shape: it carries session_id and omits
+// empty card_id/project/message_id.
 func TestMessagePayloadWireShape(t *testing.T) {
 	full := MessagePayload{
 		CardID: "CM-001", Project: "alpha", SessionID: "s1",
