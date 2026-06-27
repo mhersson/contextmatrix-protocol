@@ -11,7 +11,7 @@ type ChatStartPayload struct {
 	// container then merges an MCP entry with no Authorization header.
 	MCPAPIKey string `json:"mcp_api_key,omitempty"`
 	// Model is the Claude model the chat container should run. When empty
-	// the entrypoint falls back to the historical default
+	// the entrypoint falls back to the default
 	// (claude-sonnet-4-6). Validated against an allowlist regex; the real
 	// allowlist (label, max context tokens) lives on the CM side.
 	Model string `json:"model,omitempty"`

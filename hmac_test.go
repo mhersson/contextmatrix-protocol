@@ -7,10 +7,10 @@ import (
 	"time"
 )
 
-// Golden vectors computed from the pre-extraction implementations
-// (cm internal/runner/hmac.go == cmr internal/hmac/hmac.go) on 2026-06-10.
-// These prove the extracted signer is byte-identical to what both repos
-// shipped. NEVER regenerate these from this package's own output.
+// Golden vectors pin byte-for-byte compatibility with the HMAC
+// implementations in contextmatrix (internal/runner/hmac.go) and
+// contextmatrix-runner (internal/hmac/hmac.go). They are external
+// reference values; NEVER regenerate these from this package's own output.
 var goldenVectors = []struct {
 	name, key, method, uri, ts, want string
 	body                             []byte
