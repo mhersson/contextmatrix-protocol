@@ -14,6 +14,19 @@ type TriggerPayload struct {
 	// Selection carries auto-selection inputs for the agent backend
 	// (candidates, favorites, blacklist). Nil for the runner backend.
 	Selection *SelectionContext `json:"selection,omitempty"`
+	// GitToken is a short-lived token for cloning/pushing the project repo,
+	// minted by CM from the project's credential binding (or the instance
+	// credential when unbound). Empty on pre-multi-user CM versions —
+	// backends fall back to their local github config then.
+	GitToken string `json:"git_token,omitempty"`
+	// GitTokenExpiresAt is the RFC3339 expiry of GitToken. App-backed tokens
+	// live ~1h; backends refresh via GET /api/<backend>/git-credentials.
+	// PAT-backed tokens carry a zero/absent expiry (the PAT itself).
+	GitTokenExpiresAt string `json:"git_token_expires_at,omitempty"`
+	// LLMEndpoint is the inference endpoint configuration provisioned by CM
+	// (single admin-managed key, rotated in one place). Nil on pre-multi-user
+	// CM versions — backends fall back to their local llm_endpoint config.
+	LLMEndpoint *LLMEndpoint `json:"llm_endpoint,omitempty"`
 }
 
 // KillPayload is sent by ContextMatrix to stop a specific task.

@@ -22,6 +22,7 @@ index points at the file that owns each part:
 | `selection.go`  | Model-selection inputs shipped to the agent backend: candidates, favorites, blacklist. |
 | `logentry.go`   | One `data:` frame on a backend's `/logs` SSE stream, plus per-turn token usage.       |
 | `chat.go`       | Chat-mode container payloads: start, resume, end, and the start response.             |
+| `llm.go`        | CM-provisioned inference endpoint config, carried by trigger and chat-start payloads.  |
 | `codes.go`      | Stable `ErrorResponse.Code` constants — branch on these, not on `Message`.            |
 | `response.go`   | Webhook response bodies: success/error, container list, stop-all, health.             |
 | `hmac.go`       | HMAC-SHA256 signing/verification, header names, and clock-skew windows.               |

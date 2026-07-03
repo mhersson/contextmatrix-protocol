@@ -26,6 +26,10 @@ type ChatStartPayload struct {
 	// skips the stdin write. Sourced from CM's
 	// workflow-skills/chat-mode.md on each cold open.
 	Primer string `json:"primer,omitempty"`
+	// LLMEndpoint is the CM-provisioned inference endpoint configuration.
+	// Nil on pre-multi-user CM versions — the chat service falls back to
+	// its local llm_endpoint config.
+	LLMEndpoint *LLMEndpoint `json:"llm_endpoint,omitempty"`
 }
 
 // ChatResumeContext is the rehydration payload wire shape: the prior

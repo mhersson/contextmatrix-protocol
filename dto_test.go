@@ -27,6 +27,45 @@ func TestTriggerPayloadWireShape(t *testing.T) {
 	}
 }
 
+// Pins the token-authority fields (multi-user CM). All optional: absent
+// fields marshal to nothing, so pre-multi-user consumers see identical bytes.
+func TestTriggerPayloadTokenAuthorityWireShape(t *testing.T) {
+	legacy := TriggerPayload{CardID: "CM-001", Project: "alpha", RepoURL: "https://x/r.git"}
+	b, err := json.Marshal(legacy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != `{"card_id":"CM-001","project":"alpha","repo_url":"https://x/r.git"}` {
+		t.Errorf("omitempty drift: %s", b)
+	}
+
+	full := TriggerPayload{
+		CardID: "CM-001", Project: "alpha", RepoURL: "https://x/r.git",
+		GitToken:          "ghs_short_lived",
+		GitTokenExpiresAt: "2026-07-05T12:00:00Z",
+		LLMEndpoint:       &LLMEndpoint{Type: "openrouter", BaseURL: "https://openrouter.ai/api/v1", APIKey: "sk-x"},
+	}
+	b, err = json.Marshal(full)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"card_id":"CM-001","project":"alpha","repo_url":"https://x/r.git",` +
+		`"git_token":"ghs_short_lived","git_token_expires_at":"2026-07-05T12:00:00Z",` +
+		`"llm_endpoint":{"type":"openrouter","base_url":"https://openrouter.ai/api/v1","api_key":"sk-x"}}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+
+	var out TriggerPayload
+	if err := json.Unmarshal(b, &out); err != nil {
+		t.Fatal(err)
+	}
+	if out.GitToken != full.GitToken || out.GitTokenExpiresAt != full.GitTokenExpiresAt ||
+		out.LLMEndpoint == nil || *out.LLMEndpoint != *full.LLMEndpoint {
+		t.Errorf("round-trip mismatch: %+v", out)
+	}
+}
+
 func TestMessagePayloadIsChat(t *testing.T) {
 	if (MessagePayload{CardID: "c", Project: "p"}).IsChat() {
 		t.Error("card-bound message reported as chat")
@@ -105,6 +144,40 @@ func TestChatStartResponseWireShape(t *testing.T) {
 	}
 	if string(b) != `{"ok":true,"container_id":"abc"}` {
 		t.Errorf("wire drift: %s", b)
+	}
+}
+
+// Pins the optional llm_endpoint on chat start: absent marshals to nothing,
+// so pre-multi-user consumers see identical bytes.
+func TestChatStartPayloadLLMEndpointWireShape(t *testing.T) {
+	b, err := json.Marshal(ChatStartPayload{SessionID: "s1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != `{"session_id":"s1"}` {
+		t.Errorf("omitempty drift: %s", b)
+	}
+
+	full := ChatStartPayload{
+		SessionID:   "s1",
+		LLMEndpoint: &LLMEndpoint{Type: "openai", BaseURL: "https://llm.example/v1", APIKey: "k"},
+	}
+	b, err = json.Marshal(full)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"session_id":"s1",` +
+		`"llm_endpoint":{"type":"openai","base_url":"https://llm.example/v1","api_key":"k"}}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+
+	var out ChatStartPayload
+	if err := json.Unmarshal(b, &out); err != nil {
+		t.Fatal(err)
+	}
+	if out.LLMEndpoint == nil || *out.LLMEndpoint != *full.LLMEndpoint {
+		t.Errorf("round-trip mismatch: %+v", out)
 	}
 }
 
