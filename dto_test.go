@@ -181,6 +181,44 @@ func TestChatStartPayloadLLMEndpointWireShape(t *testing.T) {
 	}
 }
 
+// Pins the git token provisioning fields on chat start: absent marshals to nothing,
+// so pre-v0.5.1 consumers see identical bytes.
+func TestChatStartPayloadGitFieldsWireShape(t *testing.T) {
+	// Empty payload should omit all git fields
+	b, err := json.Marshal(ChatStartPayload{SessionID: "s1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != `{"session_id":"s1"}` {
+		t.Errorf("omitempty drift: %s", b)
+	}
+
+	// Full payload with git fields
+	full := ChatStartPayload{
+		SessionID:         "s1",
+		GitToken:          "ghs_short_lived",
+		GitTokenExpiresAt: "2026-07-05T12:00:00Z",
+		GitHost:           "github.com",
+	}
+	b, err = json.Marshal(full)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"session_id":"s1","git_token":"ghs_short_lived","git_token_expires_at":"2026-07-05T12:00:00Z","git_host":"github.com"}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+
+	// Round-trip unmarshal
+	var out ChatStartPayload
+	if err := json.Unmarshal(b, &out); err != nil {
+		t.Fatal(err)
+	}
+	if out.GitToken != full.GitToken || out.GitTokenExpiresAt != full.GitTokenExpiresAt || out.GitHost != full.GitHost {
+		t.Errorf("round-trip mismatch: %+v", out)
+	}
+}
+
 func TestErrorResponseWireShape(t *testing.T) {
 	b, err := json.Marshal(ErrorResponse{OK: false, Code: CodeNotFound, Message: "no such card"})
 	if err != nil {

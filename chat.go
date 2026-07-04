@@ -30,6 +30,23 @@ type ChatStartPayload struct {
 	// Nil on pre-multi-user CM versions — the chat service falls back to
 	// its local llm_endpoint config.
 	LLMEndpoint *LLMEndpoint `json:"llm_endpoint,omitempty"`
+	// GitToken is a short-lived token for cloning/pushing the project repo,
+	// minted by CM from the project's credential binding (or the instance
+	// credential when unbound). Empty on pre-v0.5.1 CM versions —
+	// chat falls back to its local github config (deprecated).
+	GitToken string `json:"git_token,omitempty"`
+	// GitTokenExpiresAt is the RFC3339 expiry of GitToken. App-backed tokens
+	// live ~1h; backends refresh via GET /api/<backend>/git-credentials.
+	// PAT-backed tokens carry a zero/absent expiry (the PAT itself).
+	// Empty on pre-v0.5.1 CM versions — chat falls back to its local
+	// github config (deprecated).
+	GitTokenExpiresAt string `json:"git_token_expires_at,omitempty"`
+	// GitHost is the bare host the token is scoped to (empty = github.com).
+	// Chat needs it explicitly: sessions can be cross-project with no repo URL
+	// to derive a host from, unlike TriggerPayload.
+	// Empty on pre-v0.5.1 CM versions — chat falls back to its local
+	// github config (deprecated).
+	GitHost string `json:"git_host,omitempty"`
 }
 
 // ChatResumeContext is the rehydration payload wire shape: the prior
