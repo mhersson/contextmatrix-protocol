@@ -219,6 +219,42 @@ func TestChatStartPayloadGitFieldsWireShape(t *testing.T) {
 	}
 }
 
+// Pins the git credentials token field on chat start: absent marshals to nothing,
+// so pre-v0.5.2 consumers see identical bytes.
+func TestChatStartPayloadGitCredentialsTokenWireShape(t *testing.T) {
+	// Empty payload should omit git_credentials_token
+	b, err := json.Marshal(ChatStartPayload{SessionID: "s1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != `{"session_id":"s1"}` {
+		t.Errorf("omitempty drift: %s", b)
+	}
+
+	// Full payload with git credentials token
+	full := ChatStartPayload{
+		SessionID:           "s1",
+		GitCredentialsToken: "sess1.abcd1234",
+	}
+	b, err = json.Marshal(full)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"session_id":"s1","git_credentials_token":"sess1.abcd1234"}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+
+	// Round-trip unmarshal
+	var out ChatStartPayload
+	if err := json.Unmarshal(b, &out); err != nil {
+		t.Fatal(err)
+	}
+	if out.GitCredentialsToken != full.GitCredentialsToken {
+		t.Errorf("round-trip mismatch: %+v", out)
+	}
+}
+
 func TestErrorResponseWireShape(t *testing.T) {
 	b, err := json.Marshal(ErrorResponse{OK: false, Code: CodeNotFound, Message: "no such card"})
 	if err != nil {

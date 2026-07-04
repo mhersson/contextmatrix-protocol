@@ -32,21 +32,30 @@ type ChatStartPayload struct {
 	LLMEndpoint *LLMEndpoint `json:"llm_endpoint,omitempty"`
 	// GitToken is a short-lived token for cloning/pushing the project repo,
 	// minted by CM from the project's credential binding (or the instance
-	// credential when unbound). Empty on pre-v0.5.1 CM versions —
-	// chat falls back to its local github config (deprecated).
+	// credential when unbound). Superseded before any CM release populated it
+	// by GitCredentialsToken + CM's worker credentials endpoint; retained for
+	// wire compatibility, never sent by CM.
 	GitToken string `json:"git_token,omitempty"`
 	// GitTokenExpiresAt is the RFC3339 expiry of GitToken. App-backed tokens
-	// live ~1h; backends refresh via GET /api/<backend>/git-credentials.
+	// live ~1h; backends refresh TriggerPayload's identical field via
+	// GET /api/<backend>/git-credentials — chat never gained that loop.
 	// PAT-backed tokens carry a zero/absent expiry (the PAT itself).
-	// Empty on pre-v0.5.1 CM versions — chat falls back to its local
-	// github config (deprecated).
+	// Superseded before any CM release populated it by GitCredentialsToken + CM's
+	// worker credentials endpoint; retained for wire compatibility, never sent by CM.
 	GitTokenExpiresAt string `json:"git_token_expires_at,omitempty"`
 	// GitHost is the bare host the token is scoped to (empty = github.com).
 	// Chat needs it explicitly: sessions can be cross-project with no repo URL
 	// to derive a host from, unlike TriggerPayload.
-	// Empty on pre-v0.5.1 CM versions — chat falls back to its local
-	// github config (deprecated).
+	// Superseded before any CM release populated it by GitCredentialsToken + CM's
+	// worker credentials endpoint; retained for wire compatibility, never sent by CM.
 	GitHost string `json:"git_host,omitempty"`
+	// GitCredentialsToken is the per-session bearer the worker presents to CM's
+	// GET /api/worker/git-credentials endpoint to fetch per-repo git credentials
+	// on demand. Form: "<session_id>.<base64url mac>" — opaque to the backend,
+	// forwarded verbatim to the worker. Empty on CM versions that predate
+	// worker-fetched credentials — the chat service falls back to its local
+	// github config (deprecated).
+	GitCredentialsToken string `json:"git_credentials_token,omitempty"`
 }
 
 // ChatResumeContext is the rehydration payload wire shape: the prior
