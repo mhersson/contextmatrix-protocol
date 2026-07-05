@@ -2,15 +2,19 @@ package protocol
 
 // TriggerPayload is sent by ContextMatrix to start a task.
 type TriggerPayload struct {
-	CardID      string    `json:"card_id"`
-	Project     string    `json:"project"`
-	RepoURL     string    `json:"repo_url"`
-	MCPAPIKey   string    `json:"mcp_api_key,omitempty"`
-	BaseBranch  string    `json:"base_branch,omitempty"`
-	RunnerImage string    `json:"runner_image,omitempty"`
-	Interactive bool      `json:"interactive,omitempty"`
-	Model       string    `json:"model,omitempty"`
-	TaskSkills  *[]string `json:"task_skills,omitempty"`
+	CardID      string `json:"card_id"`
+	Project     string `json:"project"`
+	RepoURL     string `json:"repo_url"`
+	MCPAPIKey   string `json:"mcp_api_key,omitempty"`
+	BaseBranch  string `json:"base_branch,omitempty"`
+	RunnerImage string `json:"runner_image,omitempty"`
+	Interactive bool   `json:"interactive,omitempty"`
+	Model       string `json:"model,omitempty"`
+	// BestOfN, when >= 2, asks the agent backend to race N candidate
+	// implementations and judge the winner. 0/absent = normal run. The runner
+	// backend never receives it (CM omits it for runner) and would ignore it.
+	BestOfN    int       `json:"best_of_n,omitempty"`
+	TaskSkills *[]string `json:"task_skills,omitempty"`
 	// Selection carries auto-selection inputs for the agent backend
 	// (candidates, favorites, blacklist). Nil for the runner backend.
 	Selection *SelectionContext `json:"selection,omitempty"`

@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 )
@@ -335,5 +336,26 @@ func TestLogEntryWireShape(t *testing.T) {
 	}
 	if string(b) != `{"ts":"2026-01-02T03:04:05Z","type":"system"}` {
 		t.Errorf("omitempty drift: %s", b)
+	}
+}
+
+func TestTriggerPayloadBestOfNWireShape(t *testing.T) {
+	p := TriggerPayload{CardID: "CM-001", Project: "alpha", RepoURL: "https://x/r.git", BestOfN: 3}
+	b, err := json.Marshal(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"card_id":"CM-001","project":"alpha","repo_url":"https://x/r.git","best_of_n":3}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+
+	// Zero value must be absent (runner backend ignores by never seeing it).
+	b, err = json.Marshal(TriggerPayload{CardID: "CM-001", Project: "alpha", RepoURL: "https://x/r.git"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(b), "best_of_n") {
+		t.Errorf("zero BestOfN must be omitted, got %s", b)
 	}
 }
