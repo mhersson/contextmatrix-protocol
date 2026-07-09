@@ -5,6 +5,10 @@ type ChatStartPayload struct {
 	SessionID string `json:"session_id"`
 	Project   string `json:"project,omitempty"`
 	RepoURL   string `json:"repo_url,omitempty"`
+	// RunnerImage is the per-project worker image override (the board's
+	// remote_execution.runner_image — the same field TriggerPayload.RunnerImage
+	// carries for task runs). Empty = the chat service's configured base_image.
+	RunnerImage string `json:"runner_image,omitempty"`
 	// MCPAPIKey is forwarded to the container as CM_MCP_API_KEY so the
 	// in-container claude can authenticate to CM's MCP endpoint. May be
 	// empty when CM's MCP listener has no auth (loopback dev mode); the

@@ -23,6 +23,7 @@ index points at the file that owns each part:
 | `logentry.go`   | One `data:` frame on a backend's `/logs` SSE stream, plus per-turn token usage.       |
 | `chat.go`       | Chat-mode container payloads: start, resume, end, and the start response.             |
 | `llm.go`        | CM-provisioned inference endpoint config, carried by trigger and chat-start payloads.  |
+| `verify.go`     | Operator-declared verify gate (command, timeout, env allowlist), carried by the trigger payload. |
 | `codes.go`      | Stable `ErrorResponse.Code` constants — branch on these, not on `Message`.            |
 | `response.go`   | Webhook response bodies: success/error, container list, stop-all, health.             |
 | `hmac.go`       | HMAC-SHA256 signing/verification, header names, and clock-skew windows.               |
