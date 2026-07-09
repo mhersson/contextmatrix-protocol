@@ -359,3 +359,70 @@ func TestTriggerPayloadBestOfNWireShape(t *testing.T) {
 		t.Errorf("zero BestOfN must be omitted, got %s", b)
 	}
 }
+
+// Pins the optional verify gate on trigger: absent marshals to nothing and
+// decodes to nil, so pre-verify-gate consumers see identical bytes.
+func TestTriggerPayloadVerifyWireShape(t *testing.T) {
+	full := TriggerPayload{
+		CardID: "CM-001", Project: "alpha", RepoURL: "https://x/r.git",
+		Verify: &VerifyConfig{Command: "make test", TimeoutSeconds: 300, Env: []string{"JAVA_HOME"}},
+	}
+	b, err := json.Marshal(full)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"card_id":"CM-001","project":"alpha","repo_url":"https://x/r.git",` +
+		`"verify":{"command":"make test","timeout_seconds":300,"env":["JAVA_HOME"]}}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+
+	// Old producers omit verify; it must decode to nil.
+	var out TriggerPayload
+	if err := json.Unmarshal([]byte(`{"card_id":"CM-001","project":"alpha","repo_url":"https://x/r.git"}`), &out); err != nil {
+		t.Fatal(err)
+	}
+	if out.Verify != nil {
+		t.Errorf("absent verify must decode to nil, got %+v", out.Verify)
+	}
+
+	// Round-trip the populated config.
+	out = TriggerPayload{}
+	if err := json.Unmarshal(b, &out); err != nil {
+		t.Fatal(err)
+	}
+	if out.Verify == nil || out.Verify.Command != full.Verify.Command ||
+		out.Verify.TimeoutSeconds != full.Verify.TimeoutSeconds ||
+		len(out.Verify.Env) != 1 || out.Verify.Env[0] != "JAVA_HOME" {
+		t.Errorf("round-trip mismatch: %+v", out.Verify)
+	}
+}
+
+// Pins the per-project worker image override on chat start: absent marshals to
+// nothing, so consumers predating the override see identical bytes.
+func TestChatStartPayloadRunnerImageWireShape(t *testing.T) {
+	b, err := json.Marshal(ChatStartPayload{SessionID: "s1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != `{"session_id":"s1"}` {
+		t.Errorf("omitempty drift: %s", b)
+	}
+
+	full := ChatStartPayload{SessionID: "s1", RunnerImage: "ghcr.io/x/worker:latest"}
+	b, err = json.Marshal(full)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != `{"session_id":"s1","runner_image":"ghcr.io/x/worker:latest"}` {
+		t.Errorf("wire drift: %s", b)
+	}
+
+	var out ChatStartPayload
+	if err := json.Unmarshal(b, &out); err != nil {
+		t.Fatal(err)
+	}
+	if out.RunnerImage != full.RunnerImage {
+		t.Errorf("round-trip mismatch: %+v", out)
+	}
+}

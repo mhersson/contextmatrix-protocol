@@ -18,6 +18,9 @@ type TriggerPayload struct {
 	// Selection carries auto-selection inputs for the agent backend
 	// (candidates, favorites, blacklist). Nil for the runner backend.
 	Selection *SelectionContext `json:"selection,omitempty"`
+	// Verify is the resolved card-over-project verify config for this run.
+	// Nil = nothing declared; the agent falls back to its own detection.
+	Verify *VerifyConfig `json:"verify,omitempty"`
 	// GitToken is a short-lived token for cloning/pushing the project repo,
 	// minted by CM from the project's credential binding (or the instance
 	// credential when unbound). Empty on pre-multi-user CM versions —
