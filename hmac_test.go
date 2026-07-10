@@ -7,10 +7,11 @@ import (
 	"time"
 )
 
-// Golden vectors pin byte-for-byte compatibility with the HMAC
-// implementations in contextmatrix (internal/runner/hmac.go) and
-// contextmatrix-runner (internal/hmac/hmac.go). They are external
-// reference values; NEVER regenerate these from this package's own output.
+// Golden vectors pin byte-for-byte compatibility with the HMAC verify
+// implementations in the consuming repos (contextmatrix and the agent/chat
+// backends). They are external reference values, computed with an
+// independent HMAC implementation; NEVER regenerate these from this
+// package's own output.
 var goldenVectors = []struct {
 	name, key, method, uri, ts, want string
 	body                             []byte
@@ -26,8 +27,8 @@ var goldenVectors = []struct {
 		nil,
 	},
 	{
-		"other-key", "other-key", "POST", "/api/runner/status", "1765432101",
-		"1b376adf65b27b09ca8641f4545c596bdcdcba77cf39b6e79e7287751a8be6e7",
+		"other-key", "other-key", "POST", "/api/agent/status", "1765432101",
+		"01a3bdd97b57bcb95604ae79aece5bca1467519b1d95145924e9fffdc696df3b",
 		[]byte(`{}`),
 	},
 }

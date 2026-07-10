@@ -2,7 +2,7 @@ package protocol
 
 // SelectionContext carries the model-selection inputs CM resolves at trigger
 // time and ships to the agent backend. Every field is optional: it is absent
-// for the runner backend and for any caller that does not populate it. The agent's
+// for any caller that does not populate it. The agent's
 // selector is a pure consumer of this data — it performs no AA/OpenRouter
 // fetches of its own.
 type SelectionContext struct {

@@ -37,7 +37,7 @@ type CardKillResult struct {
 // ContainerListItem is one entry in a ListContainersResponse. StartedAt is an
 // RFC3339 timestamp derived from Docker's container Created field so CM can
 // age-cap runaway containers without a second round-trip. Tracked reflects the
-// runner's in-memory tracker state at response time; divergence (Tracked=false
+// backend's in-memory tracker state at response time; divergence (Tracked=false
 // while State="running") is how the sweep detects containers the tracker has
 // orphaned.
 type ContainerListItem struct {

@@ -1,8 +1,8 @@
 # AGENTS.md — contextmatrix-protocol
 
 The CM↔backend wire contract: webhook DTOs, HMAC signing/verification, stable
-error codes, protocol version. Imported as a Go module by **contextmatrix**,
-**contextmatrix-runner**, and **contextmatrix-agent** — a change here ripples to
+error codes. Imported as a Go module by **contextmatrix**,
+**contextmatrix-agent**, and **contextmatrix-chat** — a change here ripples to
 all three, so treat every edit as a public API change.
 
 Single flat `package protocol` at the module root. `README.md` is the
@@ -12,15 +12,15 @@ file-by-file contract index; read it before editing a specific DTO.
 
 - **Stdlib only. No dependencies, ever.** `go.mod` has zero `require` lines; keep
   it that way.
-- **DTOs are pure data — no business logic, no value validation.** Which runner
+- **DTOs are pure data — no business logic, no value validation.** Which worker
   statuses are valid, which models are allowed, which transitions are legal all
   live on the CM/backend side. This package pins field *shapes*, nothing more.
 - **Never break the wire shape.** Additive change only: new fields are
   `omitempty`, decoders tolerate unknown fields. Removing or renaming a field, or
   changing a JSON tag, breaks every consumer.
-- **Versioning:** additive change = minor bump. `ProtocolVersion` is
-  observability-only — carried in `X-Protocol-Version` for mismatch diagnostics,
-  never branched on, and it does not bump on additive changes.
+- **Versioning:** additive change = minor bump. One-time exception: v0.8.0
+  removed the retired runner backend's surface with a coordinated lockstep
+  release of all consumers; the never-break policy resumes from v0.8.0.
 - **Secrets stay out of logs.** `LLMEndpoint.APIKey`, `GitToken`, `MCPAPIKey`,
   and `GitCredentialsToken` are secrets. Never log them.
 
@@ -45,7 +45,7 @@ file-by-file contract index; read it before editing a specific DTO.
   `DefaultMaxFutureSkew` (30 s) in the future.
 - **Replay defense** is a caller-supplied `ReplayCache` hook; `Verify` rejects a
   duplicate `(timestamp, signature)` pair when a cache is passed.
-- **`BestOfN` is agent-backend only.** CM omits it for the runner backend.
+- **`BestOfN` and `Selection` are agent-backend inputs.**
 - **`omitempty` is the back-compat proof:** an absent field marshals to nothing,
   so a pre-multi-user consumer sees byte-identical JSON. The pin tests assert this.
 

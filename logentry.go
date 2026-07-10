@@ -3,10 +3,9 @@ package protocol
 import "time"
 
 // LogEntry is one frame on a backend's /logs SSE stream (the `data:` JSON
-// value). Its field ORDER mirrors contextmatrix-runner's logbroadcast
-// package and matters only for the pin test; field TAGS are the wire
-// contract. CM consumes these frames in two places: the chat manager's
-// runner-log bridge and the task session-log manager.
+// value). Field ORDER matters only for the pin test; field TAGS are the
+// wire contract. CM consumes these frames in two places: the chat manager's
+// log bridge and the task session-log manager.
 type LogEntry struct {
 	Timestamp time.Time `json:"ts"`
 	CardID    string    `json:"card_id,omitempty"`
