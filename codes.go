@@ -30,14 +30,6 @@ const (
 	// Status: 409.
 	CodeConflict = "conflict"
 
-	// CodeForbidden is returned for authoritative refusals where the request
-	// is well-formed and authenticated but a server-side policy/state check
-	// disallows the operation (e.g. /promote when CM has not yet flipped the
-	// card's autonomous flag). Distinct from CodeConflict so clients can
-	// differentiate a state-conflict (409) from a policy refusal (403).
-	// Status: 403.
-	CodeForbidden = "forbidden"
-
 	// CodeLimitReached is returned by /trigger when max_concurrent has been
 	// hit. Status: 429.
 	CodeLimitReached = "limit_reached"
@@ -46,25 +38,15 @@ const (
 	// /message content cap is currently the only one). Status: 413.
 	CodeTooLarge = "too_large"
 
-	// CodeDuplicate is returned by the HMAC middleware when a signature has
-	// already been accepted inside the replay window. Status: 409.
-	CodeDuplicate = "duplicate"
-
-	// CodeStdinClosed is returned by /message when the container was once
-	// interactive but has since had its stdin closed (either by /end-session
-	// or by a previous write/close path). The session has ended; the caller
-	// should not retry. Status: 410 Gone.
-	CodeStdinClosed = "stdin_closed"
-
 	// CodeUpstreamFailure is returned when an upstream dependency (CM's
 	// verify-autonomous endpoint, currently) fails in a way that prevents
-	// the runner from completing the operation safely. The body is a fixed
+	// the backend from completing the operation safely. The body is a fixed
 	// generic shape so a misconfigured upstream cannot leak tokens or other
 	// secrets into our response. Status: 502.
 	CodeUpstreamFailure = "upstream_failure"
 
 	// CodeDraining is returned by mutating endpoints when graceful shutdown
-	// has started. The runner is refusing new work so it can finish existing
+	// has started. The backend is refusing new work so it can finish existing
 	// work before exiting. Status: 503.
 	CodeDraining = "draining"
 

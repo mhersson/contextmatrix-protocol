@@ -31,7 +31,7 @@ const (
 // ReplayCache is the caller-supplied replay-detection hook.
 // CheckAndInsert returns true when the (timestamp, signature) pair was
 // already seen (duplicate — reject) and records it otherwise.
-// Implementations: CM's runner.SignatureCache; contextmatrix-runner keeps
+// Implementations: CM's backend signature cache; each backend keeps
 // its webhook-layer ReplayCache outside Verify and passes nil here.
 type ReplayCache interface {
 	CheckAndInsert(timestamp, signature string) bool

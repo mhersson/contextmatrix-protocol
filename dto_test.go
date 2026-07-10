@@ -7,13 +7,13 @@ import (
 	"time"
 )
 
-// The wire shapes are the contract: field tags must match what
-// contextmatrix-runner's webhook handler decodes (internal/webhook/types.go).
+// The wire shapes are the contract: field tags must match what the
+// contextmatrix-agent and contextmatrix-chat webhook handlers decode.
 func TestTriggerPayloadWireShape(t *testing.T) {
 	skills := []string{"s1"}
 	p := TriggerPayload{
 		CardID: "CM-001", Project: "alpha", RepoURL: "https://x/r.git",
-		MCPAPIKey: "k", BaseBranch: "main", RunnerImage: "img", Interactive: true,
+		MCPAPIKey: "k", BaseBranch: "main", WorkerImage: "img", Interactive: true,
 		Model: "m", TaskSkills: &skills,
 	}
 	b, err := json.Marshal(p)
@@ -21,7 +21,7 @@ func TestTriggerPayloadWireShape(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := `{"card_id":"CM-001","project":"alpha","repo_url":"https://x/r.git",` +
-		`"mcp_api_key":"k","base_branch":"main","runner_image":"img",` +
+		`"mcp_api_key":"k","base_branch":"main","worker_image":"img",` +
 		`"interactive":true,"model":"m","task_skills":["s1"]}`
 	if string(b) != want {
 		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
@@ -132,6 +132,35 @@ func TestDecodeToleratesUnknownFields(t *testing.T) {
 	}
 }
 
+// Pins the v0.8.0 migration posture: payloads from a pre-v0.8.0 sender
+// carrying the retired runner-era tags decode cleanly into the current
+// structs with those keys ignored — never an error.
+func TestDecodeToleratesLegacyRunnerTags(t *testing.T) {
+	var trig TriggerPayload
+	if err := json.Unmarshal([]byte(`{"card_id":"c","runner_image":"img"}`), &trig); err != nil {
+		t.Fatalf("legacy runner_image broke decode: %v", err)
+	}
+	if trig.WorkerImage != "" {
+		t.Errorf("legacy runner_image must be ignored, got %q", trig.WorkerImage)
+	}
+
+	var cb StatusCallbackPayload
+	if err := json.Unmarshal([]byte(`{"card_id":"c","project":"p","runner_status":"running"}`), &cb); err != nil {
+		t.Fatalf("legacy runner_status broke decode: %v", err)
+	}
+	if cb.WorkerStatus != "" {
+		t.Errorf("legacy runner_status must be ignored, got %q", cb.WorkerStatus)
+	}
+
+	var cs ChatStartPayload
+	if err := json.Unmarshal([]byte(`{"session_id":"s1","primer":"text","runner_image":"img"}`), &cs); err != nil {
+		t.Fatalf("legacy primer/runner_image broke decode: %v", err)
+	}
+	if cs.WorkerImage != "" {
+		t.Errorf("legacy runner_image must be ignored, got %q", cs.WorkerImage)
+	}
+}
+
 func TestErrorCodesAreStable(t *testing.T) {
 	if CodeUnauthorized != "unauthorized" || CodeInvalidJSON != "invalid_json" {
 		t.Error("stable code constants changed — this breaks clients")
@@ -182,44 +211,6 @@ func TestChatStartPayloadLLMEndpointWireShape(t *testing.T) {
 	}
 }
 
-// Pins the git token provisioning fields on chat start: absent marshals to nothing,
-// so pre-v0.5.1 consumers see identical bytes.
-func TestChatStartPayloadGitFieldsWireShape(t *testing.T) {
-	// Empty payload should omit all git fields
-	b, err := json.Marshal(ChatStartPayload{SessionID: "s1"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(b) != `{"session_id":"s1"}` {
-		t.Errorf("omitempty drift: %s", b)
-	}
-
-	// Full payload with git fields
-	full := ChatStartPayload{
-		SessionID:         "s1",
-		GitToken:          "ghs_short_lived",
-		GitTokenExpiresAt: "2026-07-05T12:00:00Z",
-		GitHost:           "github.com",
-	}
-	b, err = json.Marshal(full)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := `{"session_id":"s1","git_token":"ghs_short_lived","git_token_expires_at":"2026-07-05T12:00:00Z","git_host":"github.com"}`
-	if string(b) != want {
-		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
-	}
-
-	// Round-trip unmarshal
-	var out ChatStartPayload
-	if err := json.Unmarshal(b, &out); err != nil {
-		t.Fatal(err)
-	}
-	if out.GitToken != full.GitToken || out.GitTokenExpiresAt != full.GitTokenExpiresAt || out.GitHost != full.GitHost {
-		t.Errorf("round-trip mismatch: %+v", out)
-	}
-}
-
 // Pins the git credentials token field on chat start: absent marshals to nothing,
 // so pre-v0.5.2 consumers see identical bytes.
 func TestChatStartPayloadGitCredentialsTokenWireShape(t *testing.T) {
@@ -266,41 +257,24 @@ func TestErrorResponseWireShape(t *testing.T) {
 	}
 }
 
-func TestProtocolVersion(t *testing.T) {
-	if ProtocolVersion != "1" || VersionHeader != "X-Protocol-Version" {
-		t.Error("version contract changed")
-	}
-}
-
 func TestStatusCallbackPayloadWireShape(t *testing.T) {
 	b, err := json.Marshal(StatusCallbackPayload{
-		CardID: "CM-001", Project: "alpha", RunnerStatus: "running", Message: "started",
+		CardID: "CM-001", Project: "alpha", WorkerStatus: "running", Message: "started",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `{"card_id":"CM-001","project":"alpha","runner_status":"running","message":"started"}`
+	want := `{"card_id":"CM-001","project":"alpha","worker_status":"running","message":"started"}`
 	if string(b) != want {
 		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
 	}
 	// message omits when empty
-	b, err = json.Marshal(StatusCallbackPayload{CardID: "c", Project: "p", RunnerStatus: "failed"})
+	b, err = json.Marshal(StatusCallbackPayload{CardID: "c", Project: "p", WorkerStatus: "failed"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(b) != `{"card_id":"c","project":"p","runner_status":"failed"}` {
+	if string(b) != `{"card_id":"c","project":"p","worker_status":"failed"}` {
 		t.Errorf("omitempty drift: %s", b)
-	}
-}
-
-func TestSkillEngagedPayloadWireShape(t *testing.T) {
-	b, err := json.Marshal(SkillEngagedPayload{CardID: "CM-001", Project: "alpha", SkillName: "go-development"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := `{"card_id":"CM-001","project":"alpha","skill_name":"go-development"}`
-	if string(b) != want {
-		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
 	}
 }
 
@@ -350,7 +324,7 @@ func TestTriggerPayloadBestOfNWireShape(t *testing.T) {
 		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
 	}
 
-	// Zero value must be absent (runner backend ignores by never seeing it).
+	// Zero value must be absent from the wire.
 	b, err = json.Marshal(TriggerPayload{CardID: "CM-001", Project: "alpha", RepoURL: "https://x/r.git"})
 	if err != nil {
 		t.Fatal(err)
@@ -400,7 +374,7 @@ func TestTriggerPayloadVerifyWireShape(t *testing.T) {
 
 // Pins the per-project worker image override on chat start: absent marshals to
 // nothing, so consumers predating the override see identical bytes.
-func TestChatStartPayloadRunnerImageWireShape(t *testing.T) {
+func TestChatStartPayloadWorkerImageWireShape(t *testing.T) {
 	b, err := json.Marshal(ChatStartPayload{SessionID: "s1"})
 	if err != nil {
 		t.Fatal(err)
@@ -409,12 +383,12 @@ func TestChatStartPayloadRunnerImageWireShape(t *testing.T) {
 		t.Errorf("omitempty drift: %s", b)
 	}
 
-	full := ChatStartPayload{SessionID: "s1", RunnerImage: "ghcr.io/x/worker:latest"}
+	full := ChatStartPayload{SessionID: "s1", WorkerImage: "ghcr.io/x/worker:latest"}
 	b, err = json.Marshal(full)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(b) != `{"session_id":"s1","runner_image":"ghcr.io/x/worker:latest"}` {
+	if string(b) != `{"session_id":"s1","worker_image":"ghcr.io/x/worker:latest"}` {
 		t.Errorf("wire drift: %s", b)
 	}
 
@@ -422,7 +396,7 @@ func TestChatStartPayloadRunnerImageWireShape(t *testing.T) {
 	if err := json.Unmarshal(b, &out); err != nil {
 		t.Fatal(err)
 	}
-	if out.RunnerImage != full.RunnerImage {
+	if out.WorkerImage != full.WorkerImage {
 		t.Errorf("round-trip mismatch: %+v", out)
 	}
 }
