@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -398,5 +399,99 @@ func TestChatStartPayloadWorkerImageWireShape(t *testing.T) {
 	}
 	if out.WorkerImage != full.WorkerImage {
 		t.Errorf("round-trip mismatch: %+v", out)
+	}
+}
+
+// Pins the co-op discussion spec on trigger (agent backend). Absent Coop
+// marshals to nothing, so pre-coop consumers see identical bytes — the base
+// TestTriggerPayloadWireShape stays byte-identical and proves it.
+func TestTriggerPayloadCoopWireShape(t *testing.T) {
+	p := TriggerPayload{
+		CardID: "CM-001", Project: "alpha", RepoURL: "https://x/r.git",
+		Coop: &CoopSpec{
+			Participants: 3,
+			Phases:       []string{"plan", "review"},
+			Rounds:       2,
+			BudgetFactor: 0.75,
+			Guests:       []GuestSpec{{Name: "laptop", URL: "http://192.168.1.50:8484", Token: "secret"}},
+		},
+	}
+	b, err := json.Marshal(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"card_id":"CM-001","project":"alpha","repo_url":"https://x/r.git",` +
+		`"coop":{"participants":3,"phases":["plan","review"],"rounds":2,` +
+		`"budget_factor":0.75,"guests":[{"name":"laptop",` +
+		`"url":"http://192.168.1.50:8484","token":"secret"}]}}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+
+	// Nil Coop must be absent from the wire.
+	b, err = json.Marshal(TriggerPayload{CardID: "CM-001", Project: "alpha", RepoURL: "https://x/r.git"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(b), "coop") {
+		t.Errorf("nil Coop must be omitted, got %s", b)
+	}
+}
+
+// Round-trips a fully-populated CoopSpec, including the forward-compat
+// checkpoint fields and a token-less guest.
+func TestCoopSpecRoundTrip(t *testing.T) {
+	in := CoopSpec{
+		Participants:       4,
+		Phases:             []string{"plan", "review", "execute"},
+		Rounds:             3,
+		BudgetFactor:       1.25,
+		ExecuteCheckpoints: true,
+		CheckpointMinTier:  "complex",
+		Guests: []GuestSpec{
+			{Name: "laptop", URL: "http://192.168.1.50:8484", Token: "secret"},
+			{Name: "lab", URL: "https://lab.example:8484"},
+		},
+	}
+	b, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var out CoopSpec
+	if err := json.Unmarshal(b, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(in, out) {
+		t.Errorf("round-trip mismatch:\n got %+v\nwant %+v", out, in)
+	}
+}
+
+// Pins speaker attribution on log frames. Absent Agent marshals to nothing —
+// TestLogEntryWireShape stays byte-identical and proves the additive change;
+// this guards the omitempty tag directly.
+func TestLogEntryAgentWireShape(t *testing.T) {
+	e := LogEntry{
+		Timestamp: time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC),
+		Type:      "text",
+		Content:   "the plan looks solid",
+		Agent:     "seat-2",
+	}
+	b, err := json.Marshal(e)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"ts":"2026-01-02T03:04:05Z","type":"text","content":"the plan looks solid","agent":"seat-2"}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+
+	// Empty Agent must be absent from the wire.
+	b, err = json.Marshal(LogEntry{Timestamp: time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC), Type: "system"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(b), "agent") {
+		t.Errorf("empty Agent must be omitted, got %s", b)
 	}
 }

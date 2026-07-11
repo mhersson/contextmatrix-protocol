@@ -23,6 +23,10 @@ type LogEntry struct {
 	ToolUseID string         `json:"tool_use_id,omitempty"`
 	Usage     *LogTokenUsage `json:"usage,omitempty"`
 	Model     string         `json:"model,omitempty"`
+	// Agent labels the speaker on co-op discussion frames: "seat-1"..,
+	// "guest-<name>", "moderator", or "human". Empty on every other frame —
+	// absent from the wire, so pre-coop consumers see identical bytes.
+	Agent string `json:"agent,omitempty"`
 }
 
 // LogTokenUsage carries per-turn token accounting on "usage"-type frames.

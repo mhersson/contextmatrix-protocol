@@ -12,7 +12,10 @@ type TriggerPayload struct {
 	Model       string `json:"model,omitempty"`
 	// BestOfN, when >= 2, asks the agent backend to race N candidate
 	// implementations and judge the winner. 0/absent = normal run.
-	BestOfN    int       `json:"best_of_n,omitempty"`
+	BestOfN int `json:"best_of_n,omitempty"`
+	// Coop configures co-op discussions for this run (agent backend only).
+	// Nil/absent = solo run.
+	Coop       *CoopSpec `json:"coop,omitempty"`
 	TaskSkills *[]string `json:"task_skills,omitempty"`
 	// Selection carries auto-selection inputs for the agent backend
 	// (candidates, favorites, blacklist).
@@ -33,6 +36,26 @@ type TriggerPayload struct {
 	// (single admin-managed key, rotated in one place). Nil on pre-multi-user
 	// CM versions — backends fall back to their local llm_endpoint config.
 	LLMEndpoint *LLMEndpoint `json:"llm_endpoint,omitempty"`
+}
+
+// GuestSpec is an operator-registered external A2A participant resolved by CM
+// at trigger time. Token is a bearer secret: serve stages it into the per-run
+// secrets file, never plain container env.
+type GuestSpec struct {
+	Name  string `json:"name"`
+	URL   string `json:"url"`
+	Token string `json:"token,omitempty"`
+}
+
+// CoopSpec configures co-op discussions for one run (agent backend only).
+type CoopSpec struct {
+	Participants       int         `json:"participants"`
+	Phases             []string    `json:"phases,omitempty"`
+	Rounds             int         `json:"rounds,omitempty"`
+	BudgetFactor       float64     `json:"budget_factor,omitempty"`
+	ExecuteCheckpoints bool        `json:"execute_checkpoints,omitempty"`
+	CheckpointMinTier  string      `json:"checkpoint_min_tier,omitempty"`
+	Guests             []GuestSpec `json:"guests,omitempty"`
 }
 
 // KillPayload is sent by ContextMatrix to stop a specific task.
