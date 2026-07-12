@@ -402,13 +402,14 @@ func TestChatStartPayloadWorkerImageWireShape(t *testing.T) {
 	}
 }
 
-// Pins the co-op discussion spec on trigger (agent backend). Absent Coop
-// marshals to nothing, so pre-coop consumers see identical bytes — the base
-// TestTriggerPayloadWireShape stays byte-identical and proves it.
-func TestTriggerPayloadCoopWireShape(t *testing.T) {
+// Pins the mob session discussion spec on trigger (agent backend). Absent Mob
+// marshals to nothing, so consumers that predate mob sessions see identical
+// bytes — the base TestTriggerPayloadWireShape stays byte-identical and
+// proves it.
+func TestTriggerPayloadMobWireShape(t *testing.T) {
 	p := TriggerPayload{
 		CardID: "CM-001", Project: "alpha", RepoURL: "https://x/r.git",
-		Coop: &CoopSpec{
+		Mob: &MobSpec{
 			Participants: 3,
 			Phases:       []string{"plan", "review"},
 			Rounds:       2,
@@ -421,27 +422,27 @@ func TestTriggerPayloadCoopWireShape(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := `{"card_id":"CM-001","project":"alpha","repo_url":"https://x/r.git",` +
-		`"coop":{"participants":3,"phases":["plan","review"],"rounds":2,` +
+		`"mob":{"participants":3,"phases":["plan","review"],"rounds":2,` +
 		`"budget_factor":0.75,"guests":[{"name":"laptop",` +
 		`"url":"http://192.168.1.50:8484","token":"secret"}]}}`
 	if string(b) != want {
 		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
 	}
 
-	// Nil Coop must be absent from the wire.
+	// Nil Mob must be absent from the wire.
 	b, err = json.Marshal(TriggerPayload{CardID: "CM-001", Project: "alpha", RepoURL: "https://x/r.git"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(b), "coop") {
-		t.Errorf("nil Coop must be omitted, got %s", b)
+	if strings.Contains(string(b), "mob") {
+		t.Errorf("nil Mob must be omitted, got %s", b)
 	}
 }
 
-// Round-trips a fully-populated CoopSpec, including the forward-compat
+// Round-trips a fully-populated MobSpec, including the forward-compat
 // checkpoint fields and a token-less guest.
-func TestCoopSpecRoundTrip(t *testing.T) {
-	in := CoopSpec{
+func TestMobSpecRoundTrip(t *testing.T) {
+	in := MobSpec{
 		Participants:       4,
 		Phases:             []string{"plan", "review", "execute"},
 		Rounds:             3,
@@ -458,7 +459,7 @@ func TestCoopSpecRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var out CoopSpec
+	var out MobSpec
 	if err := json.Unmarshal(b, &out); err != nil {
 		t.Fatal(err)
 	}
