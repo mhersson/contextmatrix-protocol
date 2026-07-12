@@ -13,9 +13,8 @@ type TriggerPayload struct {
 	// BestOfN, when >= 2, asks the agent backend to race N candidate
 	// implementations and judge the winner. 0/absent = normal run.
 	BestOfN int `json:"best_of_n,omitempty"`
-	// Coop configures co-op discussions for this run (agent backend only).
-	// Nil/absent = solo run.
-	Coop       *CoopSpec `json:"coop,omitempty"`
+	// Mob configures mob session discussions for this run. Nil = solo run.
+	Mob        *MobSpec  `json:"mob,omitempty"`
 	TaskSkills *[]string `json:"task_skills,omitempty"`
 	// Selection carries auto-selection inputs for the agent backend
 	// (candidates, favorites, blacklist).
@@ -47,8 +46,8 @@ type GuestSpec struct {
 	Token string `json:"token,omitempty"`
 }
 
-// CoopSpec configures co-op discussions for one run (agent backend only).
-type CoopSpec struct {
+// MobSpec configures mob session discussions for a run (moderator + participant seats).
+type MobSpec struct {
 	Participants       int         `json:"participants"`
 	Phases             []string    `json:"phases,omitempty"`
 	Rounds             int         `json:"rounds,omitempty"`
