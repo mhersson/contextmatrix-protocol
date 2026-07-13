@@ -79,3 +79,24 @@ type HealthResponse struct {
 	RunningContainers int  `json:"running_containers"`
 	MaxConcurrent     int  `json:"max_concurrent"`
 }
+
+// ImageListItem is one entry in a ListImagesResponse. Tags carries only the
+// repo tags that matched the backend's image_list_filters — an image with no
+// matching tag is omitted from the response entirely. Digests carries the
+// image's RepoDigests verbatim (informational; empty for locally built,
+// never-pushed images). Created is the image's creation time in unix seconds
+// and Size its size in bytes, both as reported by the Docker daemon.
+type ImageListItem struct {
+	Tags    []string `json:"tags"`
+	Digests []string `json:"digests,omitempty"`
+	Created int64    `json:"created,omitempty"`
+	Size    int64    `json:"size,omitempty"`
+}
+
+// ListImagesResponse is the body returned by GET /images. OK is always true
+// on success (a Docker list error surfaces as a 502 ErrorResponse with the
+// upstream-failure code, not a partial success here).
+type ListImagesResponse struct {
+	OK     bool            `json:"ok"`
+	Images []ImageListItem `json:"images"`
+}

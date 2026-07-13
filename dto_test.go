@@ -496,3 +496,35 @@ func TestLogEntryAgentWireShape(t *testing.T) {
 		t.Errorf("empty Agent must be omitted, got %s", b)
 	}
 }
+
+func TestListImagesResponseWireShape(t *testing.T) {
+	b, err := json.Marshal(ListImagesResponse{OK: true, Images: []ImageListItem{{
+		Tags:    []string{"contextmatrix-agent-worker:go-node"},
+		Digests: []string{"contextmatrix-agent-worker@sha256:abc"},
+		Created: 1750000000,
+		Size:    2560000000,
+	}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := `{"ok":true,"images":[{"tags":["contextmatrix-agent-worker:go-node"],` +
+		`"digests":["contextmatrix-agent-worker@sha256:abc"],` +
+		`"created":1750000000,"size":2560000000}]}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+}
+
+func TestListImagesResponseWireShape_OmitsEmptyOptionals(t *testing.T) {
+	b, err := json.Marshal(ListImagesResponse{OK: true, Images: []ImageListItem{{
+		Tags: []string{"contextmatrix-chat-worker:dev"},
+	}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if string(b) != `{"ok":true,"images":[{"tags":["contextmatrix-chat-worker:dev"]}]}` {
+		t.Errorf("wire drift: %s", b)
+	}
+}
