@@ -48,13 +48,16 @@ type GuestSpec struct {
 
 // MobSpec configures mob session discussions for a run (moderator + participant seats).
 type MobSpec struct {
-	Participants       int         `json:"participants"`
-	Phases             []string    `json:"phases,omitempty"`
-	Rounds             int         `json:"rounds,omitempty"`
-	BudgetFactor       float64     `json:"budget_factor,omitempty"`
-	ExecuteCheckpoints bool        `json:"execute_checkpoints,omitempty"`
-	CheckpointMinTier  string      `json:"checkpoint_min_tier,omitempty"`
-	Guests             []GuestSpec `json:"guests,omitempty"`
+	Participants       int      `json:"participants"`
+	Phases             []string `json:"phases,omitempty"`
+	Rounds             int      `json:"rounds,omitempty"`
+	BudgetFactor       float64  `json:"budget_factor,omitempty"`
+	ExecuteCheckpoints bool     `json:"execute_checkpoints,omitempty"`
+	CheckpointMinTier  string   `json:"checkpoint_min_tier,omitempty"`
+	// CheckpointRounds is the critique-round count for execute-checkpoint
+	// discussions (plan/review discussions use Rounds). 0 = backend default.
+	CheckpointRounds int         `json:"checkpoint_rounds,omitempty"`
+	Guests           []GuestSpec `json:"guests,omitempty"`
 }
 
 // KillPayload is sent by ContextMatrix to stop a specific task.
