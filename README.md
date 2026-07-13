@@ -30,5 +30,5 @@ index points at the file that owns each part:
 | `llm.go`        | CM-provisioned inference endpoint config, carried by trigger and chat-start payloads.  |
 | `verify.go`     | Operator-declared verify gate (command, timeout, env allowlist), carried by the trigger payload. |
 | `codes.go`      | Stable `ErrorResponse.Code` constants — branch on these, not on `Message`.            |
-| `response.go`   | Webhook response bodies: success/error, container list, stop-all, health.             |
+| `response.go`   | Webhook response bodies: success/error, container list, stop-all, health, image list. |
 | `hmac.go`       | HMAC-SHA256 signing/verification, header names, and clock-skew windows.               |
