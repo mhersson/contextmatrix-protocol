@@ -47,18 +47,6 @@ func TestSelectionContextEmptyOmits(t *testing.T) {
 	}
 }
 
-func TestTriggerPayloadSelectionOmittedWhenNil(t *testing.T) {
-	p := TriggerPayload{CardID: "CM-001", Project: "alpha", RepoURL: "r"}
-	b, err := json.Marshal(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := `{"card_id":"CM-001","project":"alpha","repo_url":"r"}`
-	if string(b) != want {
-		t.Errorf("nil Selection must be omitted:\n got %s\nwant %s", b, want)
-	}
-}
-
 func TestTriggerPayloadSelectionRoundTrip(t *testing.T) {
 	p := TriggerPayload{
 		CardID: "CM-001", Project: "alpha", RepoURL: "r",

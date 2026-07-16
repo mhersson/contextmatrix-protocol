@@ -5,9 +5,9 @@ type ChatStartPayload struct {
 	SessionID string `json:"session_id"`
 	Project   string `json:"project,omitempty"`
 	RepoURL   string `json:"repo_url,omitempty"`
-	// WorkerImage is the per-project worker image override (the board's
-	// remote_execution.worker_image — the same field TriggerPayload.WorkerImage
-	// carries for task runs). Empty = the chat service's configured base_image.
+	// WorkerImage is the per-project chat worker image override (the board's
+	// remote_execution.chat_worker_image). Empty = the chat service's
+	// configured base_image.
 	WorkerImage string `json:"worker_image,omitempty"`
 	// MCPAPIKey is forwarded to the container as CM_MCP_API_KEY so the
 	// in-container worker can authenticate to CM's MCP endpoint. May be
@@ -23,15 +23,14 @@ type ChatStartPayload struct {
 	// the rehydration prompt branch.
 	Resume *ChatResumeContext `json:"resume,omitempty"`
 	// LLMEndpoint is the CM-provisioned inference endpoint configuration.
-	// Nil on pre-multi-user CM versions — the chat service falls back to
-	// its local llm_endpoint config.
+	// The chat backend fail-closed rejects a start without it — there is no
+	// local fallback.
 	LLMEndpoint *LLMEndpoint `json:"llm_endpoint,omitempty"`
 	// GitCredentialsToken is the per-session bearer the worker presents to CM's
 	// GET /api/worker/git-credentials endpoint to fetch per-repo git credentials
 	// on demand. Form: "<session_id>.<base64url mac>" — opaque to the backend,
-	// forwarded verbatim to the worker. Empty on CM versions that predate
-	// worker-fetched credentials — the chat service falls back to its local
-	// github config (deprecated).
+	// forwarded verbatim to the worker. The chat backend fail-closed rejects
+	// a start without it — there is no local fallback.
 	GitCredentialsToken string `json:"git_credentials_token,omitempty"`
 }
 
@@ -51,7 +50,7 @@ type ChatResumeTurn struct {
 }
 
 // ChatEndPayload is sent by ContextMatrix to close the stdin of a running
-// chat container so claude receives EOF and exits.
+// chat container so the worker receives EOF and exits.
 type ChatEndPayload struct {
 	SessionID string `json:"session_id"`
 }

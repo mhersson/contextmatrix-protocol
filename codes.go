@@ -18,8 +18,8 @@ const (
 	// specific reason is logged server-side only. Status: 401.
 	CodeUnauthorized = "unauthorized"
 
-	// CodeNotFound is returned when a lookup by (project, card_id) misses the
-	// tracker. Status: 404.
+	// CodeNotFound is returned when a lookup by (project, card_id) — or
+	// session_id for chat — misses the tracker. Status: 404.
 	CodeNotFound = "not_found"
 
 	// CodeConflict is returned for resource-state conflicts: a card is already
@@ -34,12 +34,12 @@ const (
 	// hit. Status: 429.
 	CodeLimitReached = "limit_reached"
 
-	// CodeTooLarge is returned when a request field exceeds its size cap (the
-	// /message content cap is currently the only one). Status: 413.
+	// CodeTooLarge is returned when the request body or a request field
+	// exceeds its size cap. Status: 413.
 	CodeTooLarge = "too_large"
 
 	// CodeUpstreamFailure is returned when an upstream dependency (CM's
-	// verify-autonomous endpoint, currently) fails in a way that prevents
+	// verify-autonomous endpoint, the Docker daemon) fails in a way that prevents
 	// the backend from completing the operation safely. The body is a fixed
 	// generic shape so a misconfigured upstream cannot leak tokens or other
 	// secrets into our response. Status: 502.

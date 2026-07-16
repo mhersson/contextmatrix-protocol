@@ -22,7 +22,10 @@ type LogEntry struct {
 	Content   string         `json:"content,omitempty"`
 	ToolUseID string         `json:"tool_use_id,omitempty"`
 	Usage     *LogTokenUsage `json:"usage,omitempty"`
-	Model     string         `json:"model,omitempty"`
+	// Model is the slug that produced the frame. Set on usage frames and on
+	// text frames (assistant responses and mob discussion utterances); empty
+	// elsewhere.
+	Model string `json:"model,omitempty"`
 	// Agent labels the speaker on mob session discussion frames ("seat-1",
 	// "guest-<name>", "moderator", "human"). Empty on every other frame —
 	// absent from the wire, so consumers that predate mob sessions see

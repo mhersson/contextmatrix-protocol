@@ -22,38 +22,33 @@ type ErrorResponse struct {
 }
 
 // CardKillResult is one entry in a StopAllResponse: whether the individual
-// Kill succeeded for that (project, card_id) — or for chat-mode entries the
-// (session_id) — and a short reason if not. Exactly one of CardID or
-// SessionID is populated per entry; chat entries leave Project empty when
-// the chat container was global (no project binding).
+// Kill succeeded for that (project, card_id) and a short reason if not.
 type CardKillResult struct {
-	CardID    string `json:"card_id,omitempty"`
-	SessionID string `json:"session_id,omitempty"`
-	Project   string `json:"project,omitempty"`
-	OK        bool   `json:"ok"`
-	Error     string `json:"error,omitempty"`
+	CardID  string `json:"card_id,omitempty"`
+	Project string `json:"project,omitempty"`
+	OK      bool   `json:"ok"`
+	Error   string `json:"error,omitempty"`
 }
 
-// ContainerListItem is one entry in a ListContainersResponse. StartedAt is an
-// RFC3339 timestamp derived from Docker's container Created field so CM can
-// age-cap runaway containers without a second round-trip. Tracked reflects the
-// backend's in-memory tracker state at response time; divergence (Tracked=false
-// while State="running") is how the sweep detects containers the tracker has
-// orphaned.
+// ContainerListItem is one entry in a ListContainersResponse. StartedAt is
+// the backend's tracked start time as an RFC3339 timestamp; CM's reconcile
+// sweep uses it to age-cap runaway containers without a second round-trip.
+// The agent backend builds the list from its in-memory tracker, so Tracked
+// is always true and State is always "running"; both fields stay on the
+// wire for compatibility.
 type ContainerListItem struct {
-	ContainerID   string `json:"container_id"`
-	ContainerName string `json:"container_name,omitempty"`
-	CardID        string `json:"card_id"`
-	SessionID     string `json:"session_id,omitempty"`
-	Project       string `json:"project"`
-	State         string `json:"state"`
-	StartedAt     string `json:"started_at"`
-	Tracked       bool   `json:"tracked"`
+	ContainerID string `json:"container_id"`
+	CardID      string `json:"card_id"`
+	SessionID   string `json:"session_id,omitempty"`
+	Project     string `json:"project"`
+	State       string `json:"state"`
+	StartedAt   string `json:"started_at"`
+	Tracked     bool   `json:"tracked"`
 }
 
-// ListContainersResponse is the body returned by GET /containers. OK is always
-// true on success (a Docker list error surfaces as a 502 ErrorResponse with
-// the upstream-failure code, not a partial success here).
+// ListContainersResponse is the body returned by GET /containers. OK is
+// always true — the list comes from the backend's in-memory tracker, so
+// there is no error path.
 type ListContainersResponse struct {
 	OK         bool                `json:"ok"`
 	Containers []ContainerListItem `json:"containers"`
