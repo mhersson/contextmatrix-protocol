@@ -14,7 +14,10 @@ type TriggerPayload struct {
 	// implementations and judge the winner. 0/absent = normal run.
 	BestOfN int `json:"best_of_n,omitempty"`
 	// Mob configures mob session discussions for this run. Nil = solo run.
-	Mob        *MobSpec  `json:"mob,omitempty"`
+	Mob *MobSpec `json:"mob,omitempty"`
+	// TaskSkills is the explicit task-skill filter, resolved by CM as card
+	// skills over the project default. Nil = no filter — the worker gets the
+	// full mounted skill set; non-nil (even empty) = engage exactly these.
 	TaskSkills *[]string `json:"task_skills,omitempty"`
 	// Selection carries auto-selection inputs for the agent backend
 	// (candidates, favorites, blacklist).
@@ -24,16 +27,19 @@ type TriggerPayload struct {
 	Verify *VerifyConfig `json:"verify,omitempty"`
 	// GitToken is a short-lived token for cloning/pushing the project repo,
 	// minted by CM from the project's credential binding (or the instance
-	// credential when unbound). Empty on pre-multi-user CM versions —
-	// backends fall back to their local github config then.
+	// credential when unbound). The agent backend fail-closes without it: the
+	// trigger is admitted, immediately rejected, and reported failed via the
+	// status callback — there is no local fallback.
 	GitToken string `json:"git_token,omitempty"`
 	// GitTokenExpiresAt is the RFC3339 expiry of GitToken. App-backed tokens
 	// live ~1h; backends refresh via GET /api/<backend>/git-credentials.
 	// PAT-backed tokens carry a zero/absent expiry (the PAT itself).
 	GitTokenExpiresAt string `json:"git_token_expires_at,omitempty"`
 	// LLMEndpoint is the inference endpoint configuration provisioned by CM
-	// (single admin-managed key, rotated in one place). Nil on pre-multi-user
-	// CM versions — backends fall back to their local llm_endpoint config.
+	// (single admin-managed key, rotated in one place). The agent backend
+	// fail-closes without it: the trigger is admitted, immediately rejected,
+	// and reported failed via the status callback — there is no local
+	// fallback.
 	LLMEndpoint *LLMEndpoint `json:"llm_endpoint,omitempty"`
 }
 
@@ -80,9 +86,6 @@ type MessagePayload struct {
 	Content   string `json:"content"`
 	MessageID string `json:"message_id,omitempty"`
 }
-
-// IsChat reports whether the payload targets a chat session.
-func (p MessagePayload) IsChat() bool { return p.SessionID != "" }
 
 // PromotePayload is sent by ContextMatrix to switch a running interactive
 // session to fully autonomous mode.

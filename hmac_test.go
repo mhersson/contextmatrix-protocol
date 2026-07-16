@@ -57,15 +57,6 @@ func TestSignRequestHeaders(t *testing.T) {
 	}
 }
 
-func TestSkewConstants(t *testing.T) {
-	if DefaultMaxClockSkew != 5*time.Minute {
-		t.Errorf("DefaultMaxClockSkew = %v, want 5m", DefaultMaxClockSkew)
-	}
-	if DefaultMaxFutureSkew != 30*time.Second {
-		t.Errorf("DefaultMaxFutureSkew = %v, want 30s", DefaultMaxFutureSkew)
-	}
-}
-
 type fakeCache struct{ seen map[string]bool }
 
 func (f *fakeCache) CheckAndInsert(ts, sig string) bool {

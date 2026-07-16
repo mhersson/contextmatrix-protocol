@@ -1,5 +1,5 @@
 // Package protocol holds the CM↔backend wire contract: webhook DTOs,
-// HMAC signing/verification, stable error codes, and the protocol version.
+// HMAC signing/verification, and stable error codes.
 // Stdlib only — this module must never grow a dependency.
 package protocol
 
@@ -31,8 +31,8 @@ const (
 // ReplayCache is the caller-supplied replay-detection hook.
 // CheckAndInsert returns true when the (timestamp, signature) pair was
 // already seen (duplicate — reject) and records it otherwise.
-// Implementations: CM's backend signature cache; each backend keeps
-// its webhook-layer ReplayCache outside Verify and passes nil here.
+// Implementations: CM's backend signature cache and each backend's
+// webhook-layer ReplayCache.
 type ReplayCache interface {
 	CheckAndInsert(timestamp, signature string) bool
 }
