@@ -22,7 +22,8 @@ file-by-file contract index; read it before editing a specific DTO.
   removed the retired runner backend's surface with a coordinated lockstep
   release of all consumers; the never-break policy resumes from v0.8.0.
 - **Secrets stay out of logs.** `LLMEndpoint.APIKey`, `GitToken`, `MCPAPIKey`,
-  `GitCredentialsToken`, and `GuestSpec.Token` are secrets. Never log them.
+  `GitCredentialsToken`, `GuestSpec.Token`, and `TaskSkillsSource.Token` are
+  secrets. Never log them.
 
 ## Coding conventions
 
