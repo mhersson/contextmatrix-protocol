@@ -9,7 +9,7 @@ type VerifyConfig struct {
 	// Empty means no declared command.
 	Command string `json:"command,omitempty"`
 	// TimeoutSeconds bounds the verify subprocess. 0 means the consumer's
-	// default. It applies to detected/proposed commands too — the timeout is
+	// default. It applies to detected/proposed commands too - the timeout is
 	// independent of where the command came from.
 	TimeoutSeconds int `json:"timeout_seconds,omitempty"`
 	// Env names container environment variables passed through to the verify

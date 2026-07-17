@@ -14,19 +14,19 @@ const (
 
 	// CodeUnauthorized is returned by the HMAC middleware for every
 	// authentication failure (missing header, bad signature, expired
-	// timestamp, unreadable body). The body is a fixed generic shape — the
+	// timestamp, unreadable body). The body is a fixed generic shape - the
 	// specific reason is logged server-side only. Status: 401.
 	CodeUnauthorized = "unauthorized"
 
-	// CodeNotFound is returned when a lookup by (project, card_id) — or
-	// session_id for chat — misses the tracker. Status: 404.
+	// CodeNotFound is returned when a lookup by (project, card_id) - or
+	// session_id for chat - misses the tracker. Status: 404.
 	CodeNotFound = "not_found"
 
 	// CodeConflict is returned for resource-state conflicts: a card is already
 	// being tracked for the requested project (on /trigger), or the container
 	// exists but is not in a mode that accepts the operation (e.g. /message on
 	// a non-interactive container). Deliberately does NOT reveal whether the
-	// card is the SAME card or DIFFERENT — just that the state conflicts.
+	// card is the SAME card or DIFFERENT - just that the state conflicts.
 	// Status: 409.
 	CodeConflict = "conflict"
 
@@ -51,7 +51,7 @@ const (
 	CodeDraining = "draining"
 
 	// CodeInternal is the catch-all for server-side bugs (marshal failures,
-	// etc). Message is a fixed string — raw err.Error() is NEVER echoed to
+	// etc). Message is a fixed string - raw err.Error() is NEVER echoed to
 	// the client; the full error is logged server-side. Status: 500.
 	CodeInternal = "internal"
 )

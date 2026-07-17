@@ -23,14 +23,14 @@ type ChatStartPayload struct {
 	// the rehydration prompt branch.
 	Resume *ChatResumeContext `json:"resume,omitempty"`
 	// LLMEndpoint is the CM-provisioned inference endpoint configuration.
-	// The chat backend fail-closed rejects a start without it — there is no
+	// The chat backend fail-closed rejects a start without it - there is no
 	// local fallback.
 	LLMEndpoint *LLMEndpoint `json:"llm_endpoint,omitempty"`
 	// GitCredentialsToken is the per-session bearer the worker presents to CM's
 	// GET /api/worker/git-credentials endpoint to fetch per-repo git credentials
-	// on demand. Form: "<session_id>.<base64url mac>" — opaque to the backend,
+	// on demand. Form: "<session_id>.<base64url mac>" - opaque to the backend,
 	// forwarded verbatim to the worker. The chat backend fail-closed rejects
-	// a start without it — there is no local fallback.
+	// a start without it - there is no local fallback.
 	GitCredentialsToken string `json:"git_credentials_token,omitempty"`
 }
 

@@ -16,7 +16,7 @@ type TriggerPayload struct {
 	// Mob configures mob session discussions for this run. Nil = solo run.
 	Mob *MobSpec `json:"mob,omitempty"`
 	// TaskSkills is the explicit task-skill filter, resolved by CM as card
-	// skills over the project default. Nil = no filter — the worker gets the
+	// skills over the project default. Nil = no filter - the worker gets the
 	// full mounted skill set; non-nil (even empty) = engage exactly these.
 	TaskSkills *[]string `json:"task_skills,omitempty"`
 	// Selection carries auto-selection inputs for the agent backend
@@ -29,7 +29,7 @@ type TriggerPayload struct {
 	// minted by CM from the project's credential binding (or the instance
 	// credential when unbound). The agent backend fail-closes without it: the
 	// trigger is admitted, immediately rejected, and reported failed via the
-	// status callback — there is no local fallback.
+	// status callback - there is no local fallback.
 	GitToken string `json:"git_token,omitempty"`
 	// GitTokenExpiresAt is the RFC3339 expiry of GitToken. App-backed tokens
 	// live ~1h; backends refresh via GET /api/<backend>/git-credentials.
@@ -38,7 +38,7 @@ type TriggerPayload struct {
 	// LLMEndpoint is the inference endpoint configuration provisioned by CM
 	// (single admin-managed key, rotated in one place). The agent backend
 	// fail-closes without it: the trigger is admitted, immediately rejected,
-	// and reported failed via the status callback — there is no local
+	// and reported failed via the status callback - there is no local
 	// fallback.
 	LLMEndpoint *LLMEndpoint `json:"llm_endpoint,omitempty"`
 }

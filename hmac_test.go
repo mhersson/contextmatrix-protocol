@@ -150,7 +150,7 @@ func TestVerifyFailedSignatureDoesNotConsumeReplayCache(t *testing.T) {
 	if VerifySignatureWithTimestamp("k", "POST", "/x", sig, ts, []byte("forged"), DefaultMaxClockSkew, cache) {
 		t.Fatal("tampered body should fail verification")
 	}
-	// The legitimate request with the same (ts, sig) must still pass —
+	// The legitimate request with the same (ts, sig) must still pass -
 	// proving the failed attempt did not pre-consume the cache entry.
 	if !VerifySignatureWithTimestamp("k", "POST", "/x", sig, ts, []byte("b"), DefaultMaxClockSkew, cache) {
 		t.Error("legitimate request rejected: failed verification pre-consumed the replay cache entry")
