@@ -47,7 +47,7 @@ type ContainerListItem struct {
 }
 
 // ListContainersResponse is the body returned by GET /containers. OK is
-// always true — the list comes from the backend's in-memory tracker, so
+// always true - the list comes from the backend's in-memory tracker, so
 // there is no error path.
 type ListContainersResponse struct {
 	OK         bool                `json:"ok"`
@@ -76,7 +76,7 @@ type HealthResponse struct {
 }
 
 // ImageListItem is one entry in a ListImagesResponse. Tags carries only the
-// repo tags that matched the backend's image_list_filters — an image with no
+// repo tags that matched the backend's image_list_filters - an image with no
 // matching tag is omitted from the response entirely. Digests carries the
 // image's RepoDigests verbatim (informational; empty for locally built,
 // never-pushed images). Created is the image's creation time in unix seconds

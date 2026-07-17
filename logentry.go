@@ -15,7 +15,7 @@ type LogEntry struct {
 	// system, user, usage. "user" is a HITL chat-input message published
 	// directly by the backend's /message handler (bypasses the backend's
 	// output redaction). "usage" frames carry Usage and Model with empty
-	// Content — content-less metadata frames. "user_question" is not
+	// Content - content-less metadata frames. "user_question" is not
 	// emitted; its tag and ToolUseID exist for wire compatibility with
 	// persisted entries that still carry it.
 	Type      string         `json:"type"`
@@ -27,7 +27,7 @@ type LogEntry struct {
 	// elsewhere.
 	Model string `json:"model,omitempty"`
 	// Agent labels the speaker on mob session discussion frames ("seat-1",
-	// "guest-<name>", "moderator", "human"). Empty on every other frame —
+	// "guest-<name>", "moderator", "human"). Empty on every other frame -
 	// absent from the wire, so consumers that predate mob sessions see
 	// identical bytes.
 	Agent string `json:"agent,omitempty"`

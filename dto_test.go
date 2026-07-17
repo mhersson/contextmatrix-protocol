@@ -95,7 +95,7 @@ func TestMessagePayloadWireShape(t *testing.T) {
 	}
 }
 
-// Pins the original_seq tag — the only non-derivable tag in the module.
+// Pins the original_seq tag - the only non-derivable tag in the module.
 func TestChatResumeContextWireShape(t *testing.T) {
 	c := ChatResumeContext{
 		Turns:   []ChatResumeTurn{{Seq: 1, Role: "user", Content: "hi"}},
@@ -115,7 +115,7 @@ func TestChatResumeContextWireShape(t *testing.T) {
 
 // Pins the v0.8.0 migration posture: payloads from a pre-v0.8.0 sender
 // carrying the retired runner-era tags decode cleanly into the current
-// structs with those keys ignored — never an error.
+// structs with those keys ignored - never an error.
 func TestDecodeToleratesLegacyRunnerTags(t *testing.T) {
 	var trig TriggerPayload
 	if err := json.Unmarshal([]byte(`{"card_id":"c","runner_image":"img"}`), &trig); err != nil {
@@ -144,7 +144,7 @@ func TestDecodeToleratesLegacyRunnerTags(t *testing.T) {
 
 func TestErrorCodesAreStable(t *testing.T) {
 	if CodeUnauthorized != "unauthorized" || CodeInvalidJSON != "invalid_json" {
-		t.Error("stable code constants changed — this breaks clients")
+		t.Error("stable code constants changed - this breaks clients")
 	}
 }
 
@@ -381,7 +381,7 @@ func TestChatStartPayloadWorkerImageWireShape(t *testing.T) {
 
 // Pins the mob session discussion spec on trigger (agent backend). Absent Mob
 // marshals to nothing, so consumers that predate mob sessions see identical
-// bytes — the base TestTriggerPayloadWireShape stays byte-identical and
+// bytes - the base TestTriggerPayloadWireShape stays byte-identical and
 // proves it.
 func TestTriggerPayloadMobWireShape(t *testing.T) {
 	p := TriggerPayload{
@@ -445,7 +445,7 @@ func TestMobSpecRoundTrip(t *testing.T) {
 	}
 }
 
-// Pins speaker attribution on log frames. Absent Agent marshals to nothing —
+// Pins speaker attribution on log frames. Absent Agent marshals to nothing -
 // TestLogEntryWireShape stays byte-identical and proves the additive change;
 // this guards the omitempty tag directly.
 func TestLogEntryAgentWireShape(t *testing.T) {
