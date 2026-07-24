@@ -15,6 +15,7 @@ func TestSelectionContextWireShape(t *testing.T) {
 			ContextWindow:         200000,
 			CoderPrior:            0.9,
 			ReviewerPrior:         0.8,
+			Creator:               "deepseek",
 		}},
 		Favorites: []FavoriteRule{
 			{Tier: "complex", Models: []string{"a", "b"}},
@@ -28,7 +29,8 @@ func TestSelectionContextWireShape(t *testing.T) {
 	}
 	want := `{"candidates":[{"slug":"deepseek/deepseek-v4-flash",` +
 		`"prompt_price_per_tok":0.5,"completion_price_per_tok":1.5,` +
-		`"context_window":200000,"coder_prior":0.9,"reviewer_prior":0.8}],` +
+		`"context_window":200000,"coder_prior":0.9,"reviewer_prior":0.8,` +
+		`"creator":"deepseek"}],` +
 		`"favorites":[{"tier":"complex","models":["a","b"]},` +
 		`{"tier":"critical","role":"reviewer","models":["c"]}],` +
 		`"blacklist":["bad/model"]}`
@@ -91,7 +93,8 @@ func TestSelectionOutcomeStatsRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(b), "outcomes") || strings.Contains(string(b), "outcome_floor") {
+	if strings.Contains(string(b), "outcomes") || strings.Contains(string(b), "outcome_floor") ||
+		strings.Contains(string(b), "creator") {
 		t.Errorf("zero-value fields must be omitted, got %s", b)
 	}
 }
