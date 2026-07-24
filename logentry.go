@@ -12,12 +12,15 @@ type LogEntry struct {
 	Project   string    `json:"project,omitempty"`
 	SessionID string    `json:"session_id,omitempty"`
 	// Type is one of: text, thinking, tool_call, user_question, stderr,
-	// system, user, usage. "user" is a HITL chat-input message published
-	// directly by the backend's /message handler (bypasses the backend's
-	// output redaction). "usage" frames carry Usage and Model with empty
-	// Content - content-less metadata frames. "user_question" is not
+	// system, user, usage, status. "user" is a HITL chat-input message
+	// published directly by the backend's /message handler (bypasses the
+	// backend's output redaction). "usage" frames carry Usage and Model with
+	// empty Content - content-less metadata frames. "user_question" is not
 	// emitted; its tag and ToolUseID exist for wire compatibility with
-	// persisted entries that still carry it.
+	// persisted entries that still carry it. "status" is an ephemeral
+	// run-state frame (Content "working" or "idle") emitted by chat-mode
+	// logbridges; consumers translate it to presence state and never
+	// persist it as a transcript row.
 	Type      string         `json:"type"`
 	Content   string         `json:"content,omitempty"`
 	ToolUseID string         `json:"tool_use_id,omitempty"`
