@@ -32,10 +32,10 @@ type CandidateModel struct {
 	ContextWindow         int     `json:"context_window"`
 	CoderPrior            float64 `json:"coder_prior"`
 	ReviewerPrior         float64 `json:"reviewer_prior"`
-	// Creator is the model creator's Artificial Analysis slug (openai,
-	// anthropic, zai, ...). Empty when unknown (operator prior override,
-	// pre-v0.15 CM); an empty Creator exempts the model from vendor-diversity
-	// treatment in the agent's selector.
+	// Creator is the model creator's vendor namespace prefix (openai,
+	// anthropic, z-ai, qwen, ...). Empty when unknown (operator prior
+	// override, pre-v0.15 CM); an empty Creator exempts the model from
+	// vendor-diversity treatment in the agent's selector.
 	Creator string `json:"creator,omitempty"`
 	// Outcomes carries this model's Best-of-N head-to-head history. Nil until
 	// the model has recorded outcomes.
