@@ -13,6 +13,11 @@ type TriggerPayload struct {
 	// BestOfN, when >= 2, asks the agent backend to race N candidate
 	// implementations and judge the winner. 0/absent = normal run.
 	BestOfN int `json:"best_of_n,omitempty"`
+	// MaxCapability asks the agent backend to ignore cost when auto-selecting
+	// models: the most capable candidate in the card's tier wins, and operator
+	// favorites are bypassed. Per-card, human-set. False/absent = the normal
+	// best-value selection.
+	MaxCapability bool `json:"max_capability,omitempty"`
 	// Mob configures mob session discussions for this run. Nil = solo run.
 	Mob *MobSpec `json:"mob,omitempty"`
 	// TaskSkills is the explicit task-skill filter, resolved by CM as card

@@ -312,6 +312,41 @@ func TestTriggerPayloadBestOfNWireShape(t *testing.T) {
 	}
 }
 
+// Pins the per-card max-capability flag: set marshals to max_capability and
+// round-trips, false is absent from the wire so an older backend sees nothing.
+func TestTriggerPayloadMaxCapabilityWireShape(t *testing.T) {
+	p := TriggerPayload{CardID: "CM-001", Project: "alpha", RepoURL: "https://x/r.git", MaxCapability: true}
+
+	b, err := json.Marshal(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := `{"card_id":"CM-001","project":"alpha","repo_url":"https://x/r.git","max_capability":true}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+
+	var got TriggerPayload
+	if err := json.Unmarshal(b, &got); err != nil {
+		t.Fatal(err)
+	}
+
+	if !got.MaxCapability {
+		t.Errorf("MaxCapability must round-trip, got %+v", got)
+	}
+
+	// Zero value must be absent from the wire.
+	b, err = json.Marshal(TriggerPayload{CardID: "CM-001", Project: "alpha", RepoURL: "https://x/r.git"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if strings.Contains(string(b), "max_capability") {
+		t.Errorf("false MaxCapability must be omitted, got %s", b)
+	}
+}
+
 // Pins the optional verify gate on trigger: absent marshals to nothing and
 // decodes to nil, so pre-verify-gate consumers see identical bytes.
 func TestTriggerPayloadVerifyWireShape(t *testing.T) {
