@@ -59,7 +59,6 @@ file-by-file contract index; read it before editing a specific DTO.
 Run before every commit:
 
 ```bash
-go fix ./...    # apply fixes
 go vet ./...    # must be clean (CI enforces)
 go test ./...   # must be clean (CI enforces) - wire-pin tests are the safety net
 ```
