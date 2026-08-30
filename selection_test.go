@@ -67,34 +67,12 @@ func TestTriggerPayloadSelectionRoundTrip(t *testing.T) {
 	}
 }
 
-func TestSelectionOutcomeStatsRoundTrip(t *testing.T) {
-	sc := SelectionContext{
-		Candidates: []CandidateModel{{
-			Slug:     "a/model",
-			Outcomes: &OutcomeStats{Samples: 21, Wins: 9, ExpectedWins: 7.5},
-		}},
-		OutcomeFloor: 20,
-	}
-	b, err := json.Marshal(sc)
+func TestSelectionOmitsZeroValueFields(t *testing.T) {
+	b, err := json.Marshal(SelectionContext{Candidates: []CandidateModel{{Slug: "a/model"}}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	var got SelectionContext
-	if err := json.Unmarshal(b, &got); err != nil {
-		t.Fatal(err)
-	}
-	if got.OutcomeFloor != 20 || got.Candidates[0].Outcomes == nil ||
-		got.Candidates[0].Outcomes.Wins != 9 || got.Candidates[0].Outcomes.ExpectedWins != 7.5 {
-		t.Errorf("roundtrip drift: %+v", got)
-	}
-
-	// Absent outcomes stay nil and are omitted on the wire.
-	b, err = json.Marshal(SelectionContext{Candidates: []CandidateModel{{Slug: "a/model"}}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if strings.Contains(string(b), "outcomes") || strings.Contains(string(b), "outcome_floor") ||
-		strings.Contains(string(b), "creator") {
+	if strings.Contains(string(b), "creator") {
 		t.Errorf("zero-value fields must be omitted, got %s", b)
 	}
 }
