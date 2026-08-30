@@ -16,9 +16,6 @@ type SelectionContext struct {
 	// Blacklist is the set of OpenRouter slugs the agent must never
 	// auto-select (learned harness-incompatibility).
 	Blacklist []string `json:"blacklist,omitempty"`
-	// OutcomeFloor is the per-model sample count required before Outcomes may
-	// bias selection. 0 = biasing disabled.
-	OutcomeFloor int `json:"outcome_floor,omitempty"`
 }
 
 // CandidateModel is one auto-selectable model with everything the agent's
@@ -37,9 +34,6 @@ type CandidateModel struct {
 	// override, pre-v0.15 CM); an empty Creator exempts the model from
 	// vendor-diversity treatment in the agent's selector.
 	Creator string `json:"creator,omitempty"`
-	// Outcomes carries this model's Best-of-N head-to-head history. Nil until
-	// the model has recorded outcomes.
-	Outcomes *OutcomeStats `json:"outcomes,omitempty"`
 }
 
 // FavoriteRule is an operator-configured preference: for the given complexity
@@ -50,13 +44,4 @@ type FavoriteRule struct {
 	Tier   string   `json:"tier"`
 	Role   string   `json:"role,omitempty"`
 	Models []string `json:"models"`
-}
-
-// OutcomeStats aggregates a model's recorded Best-of-N candidate appearances.
-// ExpectedWins is Σ 1/n_candidates over its games, so with wrap-around
-// self-play (same model in several slots) observed == expected == neutral.
-type OutcomeStats struct {
-	Samples      int     `json:"samples"`
-	Wins         int     `json:"wins"`
-	ExpectedWins float64 `json:"expected_wins"`
 }

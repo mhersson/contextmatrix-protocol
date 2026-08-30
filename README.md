@@ -24,7 +24,7 @@ index points at the file that owns each part:
 | --------------- | ------------------------------------------------------------------------------------- |
 | `task.go`       | CM→backend task lifecycle: trigger, kill, stop-all, message, promote, end-session.    |
 | `callback.go`   | Backend→CM callback body: status.                                                     |
-| `selection.go`  | Model-selection inputs shipped to the agent backend: candidates (prices, priors, creator), favorites, blacklist, and per-model Best-of-N outcome stats + floor for win-rate-biased selection. |
+| `selection.go`  | Model-selection inputs shipped to the agent backend: candidates (prices, priors, creator), favorites, and blacklist. |
 | `logentry.go`   | One `data:` frame on a backend's `/logs` SSE stream, plus per-turn token usage.       |
 | `chat.go`       | Chat-mode container payloads: start, resume, end, and the start response.             |
 | `llm.go`        | CM-provisioned inference endpoint config, carried by trigger and chat-start payloads.  |
