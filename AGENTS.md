@@ -36,9 +36,12 @@ file-by-file contract index; read it before editing a specific DTO.
   never on `Message`.
 - Response bodies never echo raw `err.Error()` or user-supplied values. The single
   field name in a validation error is the only exception.
-- Do not write doc comments on simple functions - if what it does is
-  straightforward, the code itself is the documentation. (DTO and field doc
-  comments are the wire contract - they stay.)
+- Comments explain only non-obvious decisions, constraints, safety invariants,
+  or workarounds. Do not narrate what code does or record change history; git
+  holds history. Keep comments to one or two tight lines unless a longer
+  explanation is genuinely necessary. Rewrite or delete if you find comments
+  that don't follow this rule. (DTO and field doc comments are the wire
+  contract - they stay.)
 - Never use em-dashes; use hyphens (-).
 
 ## Key domain rules
