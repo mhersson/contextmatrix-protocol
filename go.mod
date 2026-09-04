@@ -1,3 +1,3 @@
 module github.com/mhersson/contextmatrix-protocol
 
-go 1.26.7
+go 1.26.8
