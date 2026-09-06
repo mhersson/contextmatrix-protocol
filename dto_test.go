@@ -540,3 +540,53 @@ func TestListImagesResponseWireShape_OmitsEmptyOptionals(t *testing.T) {
 		t.Errorf("wire drift: %s", b)
 	}
 }
+
+// Pins the playbook base-branch fields: set together they marshal right after
+// base_branch and round-trip; absent they add nothing to the wire, so a
+// backend that predates them sees byte-identical JSON. A legacy payload
+// without them decodes to the zero values.
+func TestTriggerPayloadCreateBaseBranchWireShape(t *testing.T) {
+	p := TriggerPayload{
+		CardID: "CM-001", Project: "alpha", RepoURL: "https://x/r.git",
+		BaseBranch: "playbook/rollout", CreateBaseBranch: true, BaseBranchFrom: "main",
+	}
+
+	b, err := json.Marshal(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := `{"card_id":"CM-001","project":"alpha","repo_url":"https://x/r.git","base_branch":"playbook/rollout","create_base_branch":true,"base_branch_from":"main"}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+
+	var out TriggerPayload
+	if err := json.Unmarshal(b, &out); err != nil {
+		t.Fatal(err)
+	}
+
+	if !out.CreateBaseBranch || out.BaseBranchFrom != "main" {
+		t.Errorf("round trip lost the fields: %+v", out)
+	}
+
+	// Zero values must be absent from the wire.
+	b, err = json.Marshal(TriggerPayload{CardID: "CM-001", Project: "alpha", RepoURL: "https://x/r.git", BaseBranch: "main"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if strings.Contains(string(b), "create_base_branch") || strings.Contains(string(b), "base_branch_from") {
+		t.Errorf("zero playbook fields must be omitted, got %s", b)
+	}
+
+	// A legacy payload without the fields decodes to the zero values.
+	var legacy TriggerPayload
+	if err := json.Unmarshal([]byte(`{"card_id":"CM-001","project":"alpha","repo_url":"https://x/r.git","base_branch":"main"}`), &legacy); err != nil {
+		t.Fatal(err)
+	}
+
+	if legacy.CreateBaseBranch || legacy.BaseBranchFrom != "" {
+		t.Errorf("legacy payload must decode to zero playbook fields, got %+v", legacy)
+	}
+}

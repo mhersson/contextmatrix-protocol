@@ -2,14 +2,24 @@ package protocol
 
 // TriggerPayload is sent by ContextMatrix to start a task.
 type TriggerPayload struct {
-	CardID      string `json:"card_id"`
-	Project     string `json:"project"`
-	RepoURL     string `json:"repo_url"`
-	MCPAPIKey   string `json:"mcp_api_key,omitempty"`
-	BaseBranch  string `json:"base_branch,omitempty"`
-	WorkerImage string `json:"worker_image,omitempty"`
-	Interactive bool   `json:"interactive,omitempty"`
-	Model       string `json:"model,omitempty"`
+	CardID     string `json:"card_id"`
+	Project    string `json:"project"`
+	RepoURL    string `json:"repo_url"`
+	MCPAPIKey  string `json:"mcp_api_key,omitempty"`
+	BaseBranch string `json:"base_branch,omitempty"`
+	// CreateBaseBranch asks the backend to create BaseBranch on the remote when
+	// it does not exist yet, cut from BaseBranchFrom (empty = the remote
+	// default branch), with a create-only push that never moves an existing
+	// branch. Playbook runs set both: the shared playbook branch is born with
+	// the first card that runs in a repository. A normal card run never sets
+	// them, so a mistyped base_branch keeps failing at clone. Absent on
+	// pre-playbook CM versions; a backend that predates the fields ignores
+	// them and fails the clone as before.
+	CreateBaseBranch bool   `json:"create_base_branch,omitempty"`
+	BaseBranchFrom   string `json:"base_branch_from,omitempty"`
+	WorkerImage      string `json:"worker_image,omitempty"`
+	Interactive      bool   `json:"interactive,omitempty"`
+	Model            string `json:"model,omitempty"`
 	// BestOfN, when >= 2, asks the agent backend to race N candidate
 	// implementations and judge the winner. 0/absent = normal run.
 	BestOfN int `json:"best_of_n,omitempty"`
