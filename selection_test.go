@@ -76,3 +76,41 @@ func TestSelectionOmitsZeroValueFields(t *testing.T) {
 		t.Errorf("zero-value fields must be omitted, got %s", b)
 	}
 }
+
+func TestSelectionContextTierBarsWireShape(t *testing.T) {
+	sc := SelectionContext{
+		TierBars: map[string]map[string]float64{
+			"coder":    {"simple": 0.65, "moderate": 0.8, "complex": 0.9, "critical": 0.95},
+			"reviewer": {"simple": 0.65, "moderate": 0.76, "complex": 0.82, "critical": 0.93},
+		},
+	}
+	b, err := json.Marshal(sc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Map keys marshal sorted, so the bytes are stable.
+	want := `{"tier_bars":{` +
+		`"coder":{"complex":0.9,"critical":0.95,"moderate":0.8,"simple":0.65},` +
+		`"reviewer":{"complex":0.82,"critical":0.93,"moderate":0.76,"simple":0.65}}}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+
+	var back SelectionContext
+	if err := json.Unmarshal(b, &back); err != nil {
+		t.Fatal(err)
+	}
+	if back.TierBars["coder"]["complex"] != 0.9 || back.TierBars["reviewer"]["critical"] != 0.93 {
+		t.Errorf("round trip lost a bar: %+v", back.TierBars)
+	}
+}
+
+func TestSelectionContextTierBarsAbsentIsOmitted(t *testing.T) {
+	b, err := json.Marshal(SelectionContext{Blacklist: []string{"x"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != `{"blacklist":["x"]}` {
+		t.Errorf("an unset ladder must not appear on the wire: %s", b)
+	}
+}

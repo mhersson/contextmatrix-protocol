@@ -5,6 +5,11 @@ stable error codes. Imported by contextmatrix, contextmatrix-agent, and
 contextmatrix-chat.
 
 - **Stdlib only.** No dependencies, ever.
+- **One package with logic.** `selection/` is the deterministic reading of
+  the selection wire types: given candidates, favorites, blacklist and a
+  per-role tier ladder, which model a role and tier resolve to. Both CM and
+  the agent import it so a preview and a real pick cannot disagree. It holds
+  pure functions only - no logging, no I/O, no run-time state.
 - **Forward-compatible by discipline:** new fields are `omitempty`, decoders
   tolerate unknown fields.
 - **Versioning:** additive change = minor bump; never break the wire shape.
@@ -24,7 +29,8 @@ index points at the file that owns each part:
 | --------------- | ------------------------------------------------------------------------------------- |
 | `task.go`       | CM→backend task lifecycle: trigger, kill, stop-all, message, promote, end-session.    |
 | `callback.go`   | Backend→CM callback body: status.                                                     |
-| `selection.go`  | Model-selection inputs shipped to the agent backend: candidates (prices, priors, creator), favorites, and blacklist. |
+| `selection.go`  | Model-selection inputs shipped to the agent backend: candidates (prices, priors, creator), favorites, blacklist, and per-role tier bars. |
+| `selection/`    | The selector: tier ladders per role, descent, price band, best value, favorites, panel seats, reachability. Pure functions over the types in `selection.go`. |
 | `logentry.go`   | One `data:` frame on a backend's `/logs` SSE stream, plus per-turn token usage.       |
 | `chat.go`       | Chat-mode container payloads: start, resume, end, and the start response.             |
 | `llm.go`        | CM-provisioned inference endpoint config, carried by trigger and chat-start payloads.  |

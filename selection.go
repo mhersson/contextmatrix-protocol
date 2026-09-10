@@ -16,6 +16,15 @@ type SelectionContext struct {
 	// Blacklist is the set of OpenRouter slugs the agent must never
 	// auto-select (learned harness-incompatibility).
 	Blacklist []string `json:"blacklist,omitempty"`
+	// TierBars is the operator's quality ladder per role: role name ("coder",
+	// "reviewer") to tier name ("simple", "moderate", "complex", "critical")
+	// to normalised-prior bar. A missing role or an empty map means the
+	// built-in ladder for that role; a partial tier map merges over the
+	// built-in bars. The agent validates each role's ladder with
+	// selection.LaddersFromWire and falls back to the built-in bars for that
+	// role, logging on the card, when it does not validate. Absent for CMs
+	// older than this field, which is the same as sending nothing.
+	TierBars map[string]map[string]float64 `json:"tier_bars,omitempty"`
 }
 
 // CandidateModel is one auto-selectable model with everything the agent's

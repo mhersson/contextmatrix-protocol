@@ -15,6 +15,12 @@ file-by-file contract index; read it before editing a specific DTO.
 - **DTOs are pure data - no business logic, no value validation.** Which worker
   statuses are valid, which models are allowed, which transitions are legal all
   live on the CM/backend side. This package pins field *shapes*, nothing more.
+- **The one exception is `selection/`.** It is the reference interpretation of
+  the selection DTOs: pure functions from candidates plus a per-role ladder to
+  picks, so CM's preview and the agent's real selection are the same code.
+  Its scope is exactly that. No logging, no I/O, no run-time state, no types
+  from any other module. If a change needs one of those it belongs in the
+  consumer, and if the line erodes the package moves to its own module.
 - **Never break the wire shape.** Additive change only: new fields are
   `omitempty`, decoders tolerate unknown fields. Removing or renaming a field, or
   changing a JSON tag, breaks every consumer.
@@ -63,7 +69,7 @@ Run before every commit:
 
 ```bash
 go vet ./...    # must be clean (CI enforces)
-go test ./...   # must be clean (CI enforces) - wire-pin tests are the safety net
+go test ./...   # must be clean (CI enforces) - wire-pin tests are the safety net, and selection package tests cover its determinism
 ```
 
 The pin tests (`dto_test.go`, `selection_test.go`, `hmac_test.go`) marshal each
