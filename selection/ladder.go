@@ -95,7 +95,11 @@ func TierBarsFromStrings(in map[string]float64) (map[Tier]float64, error) {
 
 // Ladders is the operator's quality ladder per role. A role absent from the
 // map reads as DefaultTierBars through Bars, so a nil Ladders is the
-// built-in behaviour and a caller never has to special-case it.
+// built-in behaviour and a caller never has to special-case it. A role that
+// IS present must map every tier in DefaultTierBars: LaddersFromWire and
+// TierBarsFromStrings both build a complete map by construction, but a
+// hand-built partial one reads a missing tier as bar 0 through barFor, which
+// opens that rung to any model carrying a prior.
 type Ladders map[Role]map[Tier]float64
 
 // roleNames is the closed set a wire ladder may be keyed on.

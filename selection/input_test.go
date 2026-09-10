@@ -20,6 +20,7 @@ func TestNewBuildsCatalogPriorsAndFavorites(t *testing.T) {
 
 	got := s.SelectByComplexity(SelectInput{Role: RoleCoder, Tier: TierComplex})
 	eq(t, "z-ai/glm-5.2", got.Model)
+	eq(t, SourceFavorite, got.Source, "the single candidate must not win by default; the favorite must actually fire")
 
 	truthy(t, s.blacklist["bad/model"], "blacklist not applied")
 }

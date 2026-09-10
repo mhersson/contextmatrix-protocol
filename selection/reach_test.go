@@ -57,7 +57,7 @@ func TestReachabilityIsOrderedStrictestFirst(t *testing.T) {
 
 // TestOrphanFavoriteTiersNamesFavoritesNoRungCanConsult pins the dead-favorite
 // class the rung-local lookup does not fix: CM sends the tier as a free string
-// and build.go converts it unchecked.
+// and New converts it unchecked.
 func TestOrphanFavoriteTiersNamesFavoritesNoRungCanConsult(t *testing.T) {
 	tests := []struct {
 		name string

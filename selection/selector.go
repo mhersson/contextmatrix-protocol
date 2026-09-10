@@ -224,7 +224,10 @@ type Input struct {
 	Blacklist  []string
 	// Ladders is the operator's quality ladder per role. It is the ONLY
 	// source of tier ordering: descent sorts it, so an operator ladder with
-	// different rungs walks correctly.
+	// different rungs walks correctly. A role's map must be complete (every
+	// tier in DefaultTierBars); build it with LaddersFromWire or
+	// TierBarsFromStrings, never by hand, since a partial map reads a
+	// missing tier as bar 0.
 	Ladders       Ladders
 	PriceHeadroom float64 // <= 0 uses 1.5
 	// MaxCapability makes every pick choose the most capable candidate in the
@@ -330,24 +333,30 @@ func (s *Selector) ContextWindow(id string) int {
 	return m.window
 }
 
-// Bars is the ladder the selector applies for role.
-func (s *Selector) Bars(role Role) map[Tier]float64 { return s.ladders.Bars(role) }
+// Bars is the ladder the selector applies for role. The map is a clone: this
+// type is documented immutable, so a caller cannot reconfigure the live
+// selector by mutating what it gets back.
+func (s *Selector) Bars(role Role) map[Tier]float64 { return maps.Clone(s.bars(role)) }
 
-// BarFor is the bar a request at (role, tier) must clear.
-func (s *Selector) BarFor(role Role, tier Tier) float64 { return s.Bars(role)[tier] }
+// BarFor is the bar a request at (role, tier) must clear. It reads through
+// the unexported bars() rather than Bars(), so the hot selection path does
+// not pay for a clone on every lookup.
+func (s *Selector) BarFor(role Role, tier Tier) float64 { return s.bars(role)[tier] }
 
 // TierOf is the strictest tier a prior clears for role, false when it clears
 // none. It is the membership rule an operator page draws bands from, so it
-// is exported rather than left to be re-implemented.
+// is exported rather than left to be re-implemented. When two tiers share the
+// ladder's top bar, ties break to the tier name that sorts first, so a
+// ladder with complex and critical configured equal reports complex.
 func (s *Selector) TierOf(role Role, prior float64) (Tier, bool) {
-	t := s.metTierFor(role, prior, true, s.strictest(role))
+	t := s.metTierFor(role, prior, prior > 0, s.strictest(role))
 
 	return t, t != ""
 }
 
 // strictest is the tier with the highest bar for role.
 func (s *Selector) strictest(role Role) Tier {
-	bars := s.Bars(role)
+	bars := s.bars(role)
 
 	var top Tier
 

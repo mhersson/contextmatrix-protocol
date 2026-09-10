@@ -829,6 +829,42 @@ func TestTierOfIsTheStrictestTierAPriorClears(t *testing.T) {
 	falsy(t, ok)
 }
 
+// TestTierOfTreatsAZeroPriorAsUnmeasured pins that TierOf reads a prior of 0
+// the same way classify does: no measured prior, not a real score of 0. A
+// ladder whose simple bar is 0 is the case that exposes the bug, since a
+// hard-coded hasPrior=true would let 0 clear that rung.
+func TestTierOfTreatsAZeroPriorAsUnmeasured(t *testing.T) {
+	s := sel("capable/default")
+	s.ladders = Ladders{RoleCoder: {
+		TierSimple: 0, TierModerate: 0.76, TierComplex: 0.82, TierCritical: 0.90,
+	}}
+
+	got, ok := s.TierOf(RoleCoder, 0)
+	eq(t, Tier(""), got, "an unmeasured prior clears no tier, even one barred at 0")
+	falsy(t, ok)
+
+	got, ok = s.TierOf(RoleCoder, 0.5)
+	eq(t, TierSimple, got)
+	truthy(t, ok)
+}
+
+// TestBarsReturnsACopy pins that Bars cannot be used to reconfigure the
+// selector: it is documented immutable, so mutating the map a caller gets
+// back must never change what BarFor answers.
+func TestBarsReturnsACopy(t *testing.T) {
+	s := New(Input{
+		Ladders: Ladders{RoleCoder: {
+			TierSimple: 0.65, TierModerate: 0.76, TierComplex: 0.82, TierCritical: 0.90,
+		}},
+		Capable: "capable/default",
+	})
+
+	bars := s.Bars(RoleCoder)
+	bars[TierComplex] = 0
+
+	near(t, 0.82, s.BarFor(RoleCoder, TierComplex), 1e-9, "mutating the returned map must not reach the selector")
+}
+
 func TestNewBuildsFromWire(t *testing.T) {
 	candidates := []protocol.CandidateModel{
 		{
