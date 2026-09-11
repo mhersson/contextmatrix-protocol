@@ -47,6 +47,13 @@ func TestNewThreadsPriceHeadroom(t *testing.T) {
 	sWide := New(Input{Candidates: candidates, Capable: "capable/default", PriceHeadroom: 3.0})
 	eq(t, "premium/model", sWide.SelectByComplexity(in).Model,
 		"a non-default headroom must widen the best-value band")
+
+	// A multiplier below 1 would put the band below the cheapest candidate,
+	// so it is nonsense rather than a choice: it reads as the built-in one.
+	sSub := New(Input{Candidates: candidates, Capable: "capable/default", PriceHeadroom: 0.5})
+	eq(t, "cheap/model", sSub.SelectByComplexity(in).Model,
+		"a headroom below 1 must select exactly as the built-in headroom does")
+	near(t, DefaultPriceHeadroom, sSub.headroomOrDefault(), 1e-9)
 }
 
 func TestNewThreadsMaxCapability(t *testing.T) {
