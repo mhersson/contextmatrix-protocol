@@ -41,7 +41,7 @@ func TestNewThreadsPriceHeadroom(t *testing.T) {
 	}
 	in := SelectInput{Role: RoleCoder, Tier: TierModerate}
 
-	sDefault := New(Input{Candidates: candidates, Capable: "capable/default"}) // 0 -> worker default (1.5)
+	sDefault := New(Input{Candidates: candidates, Capable: "capable/default"}) // 0 -> the built-in default (1.5)
 	eq(t, "cheap/model", sDefault.SelectByComplexity(in).Model)
 
 	sWide := New(Input{Candidates: candidates, Capable: "capable/default", PriceHeadroom: 3.0})
@@ -54,6 +54,12 @@ func TestNewThreadsPriceHeadroom(t *testing.T) {
 	eq(t, "cheap/model", sSub.SelectByComplexity(in).Model,
 		"a headroom below 1 must select exactly as the built-in headroom does")
 	near(t, DefaultPriceHeadroom, sSub.headroomOrDefault(), 1e-9)
+
+	// The floor is inclusive: exactly 1 is the operator asking for the
+	// cheapest candidate only, not a value to correct.
+	sExact := New(Input{Candidates: candidates, Capable: "capable/default", PriceHeadroom: 1})
+	near(t, 1, sExact.headroomOrDefault(), 1e-9,
+		"a headroom of exactly 1 must be stored verbatim")
 }
 
 func TestNewThreadsMaxCapability(t *testing.T) {
