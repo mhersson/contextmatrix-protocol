@@ -899,7 +899,7 @@ func TestNewBuildsFromWire(t *testing.T) {
 	eq(t, "vendor", s.Vendor("vendor/cheap"), "no creator falls back to the slug namespace")
 	near(t, 0.95, s.BarFor(RoleCoder, TierCritical), 1e-9, "the operator ladder reaches the selector")
 	near(t, 0.90, s.BarFor(RoleReviewer, TierCritical), 1e-9, "a role the operator left out keeps the built-in bars")
-	near(t, defaultPriceHeadroom, s.headroomOrDefault(), 1e-9, "an unset headroom is the built-in one")
+	near(t, DefaultPriceHeadroom, s.headroomOrDefault(), 1e-9, "an unset headroom is the built-in one")
 
 	coder := s.SelectByComplexity(SelectInput{Role: RoleCoder, Tier: TierComplex})
 	eq(t, "vendor/strong", coder.Model, "the wire favorite is honoured at its own tier and role")

@@ -25,6 +25,14 @@ type SelectionContext struct {
 	// role, logging on the card, when it does not validate. Absent for CMs
 	// older than this field, which is the same as sending nothing.
 	TierBars map[string]map[string]float64 `json:"tier_bars,omitempty"`
+	// PriceHeadroom is the operator's best-value band multiplier: a
+	// candidate is in band when its blended price is at most the cheapest
+	// eligible candidate's times this. 0 or absent means the built-in
+	// selection.DefaultPriceHeadroom (1.5). The agent applies it through
+	// selection.Input.PriceHeadroom, which reads any value below 1 as the
+	// built-in one. Absent for CMs older than this field, which is the same
+	// as sending nothing.
+	PriceHeadroom float64 `json:"price_headroom,omitempty"`
 }
 
 // CandidateModel is one auto-selectable model with everything the agent's

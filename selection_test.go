@@ -114,3 +114,21 @@ func TestSelectionContextTierBarsAbsentIsOmitted(t *testing.T) {
 		t.Errorf("an unset ladder must not appear on the wire: %s", b)
 	}
 }
+
+func TestSelectionContextPriceHeadroomWire(t *testing.T) {
+	b, err := json.Marshal(SelectionContext{PriceHeadroom: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != `{"price_headroom":2}` {
+		t.Errorf("wire drift: got %s", b)
+	}
+
+	var sc SelectionContext
+	if err := json.Unmarshal([]byte(`{"price_headroom":1.25}`), &sc); err != nil {
+		t.Fatal(err)
+	}
+	if sc.PriceHeadroom != 1.25 {
+		t.Errorf("price_headroom did not round-trip: got %v", sc.PriceHeadroom)
+	}
+}

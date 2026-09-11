@@ -184,7 +184,10 @@ type candidate struct {
 	price   float64
 }
 
-const defaultPriceHeadroom = 1.5
+// DefaultPriceHeadroom is the best-value band multiplier applied when the
+// operator has set none. CM reports it and falls back to it in the admin
+// preview; the agent applies it, so both sides read one number.
+const DefaultPriceHeadroom = 1.5
 
 // model is one catalog row as the selector sees it. A prior of 0 means no
 // measured prior for that role: CM encodes a missing Artificial Analysis
@@ -228,8 +231,12 @@ type Input struct {
 	// tier in DefaultTierBars); build it with LaddersFromWire or
 	// TierBarsFromStrings, never by hand, since a partial map reads a
 	// missing tier as bar 0.
-	Ladders       Ladders
-	PriceHeadroom float64 // <= 0 uses 1.5
+	Ladders Ladders
+	// PriceHeadroom is the best-value band multiplier. A value below 1
+	// would put the band below the cheapest candidate, so anything below 1
+	// (including the 0 of an absent wire field) reads as
+	// DefaultPriceHeadroom.
+	PriceHeadroom float64
 	// MaxCapability makes every pick choose the most capable candidate in the
 	// tier regardless of price, and bypass operator favorites. It is a
 	// per-request setting, not a property of the catalog.
@@ -276,7 +283,7 @@ func New(in Input) *Selector {
 	s.ladders = in.Ladders
 	s.maxCapability = in.MaxCapability
 
-	if in.PriceHeadroom > 0 {
+	if in.PriceHeadroom >= 1 {
 		s.headroom = in.PriceHeadroom
 	}
 
@@ -301,7 +308,7 @@ func newSelector(models []model, blacklist map[string]bool, favorites map[favKey
 
 	return &Selector{
 		capable: capable, models: models, byID: byID,
-		blacklist: blacklist, favorites: favorites, headroom: defaultPriceHeadroom,
+		blacklist: blacklist, favorites: favorites, headroom: DefaultPriceHeadroom,
 	}
 }
 
@@ -627,9 +634,11 @@ func (s *Selector) employable(id string, in SelectInput) bool {
 	return in.EstTokens <= 0 || s.fitsWindow(id, in.EstTokens)
 }
 
+// headroomOrDefault guards the zero value a test-built Selector may carry;
+// New never stores a headroom below 1.
 func (s *Selector) headroomOrDefault() float64 {
-	if s.headroom <= 0 {
-		return defaultPriceHeadroom
+	if s.headroom < 1 {
+		return DefaultPriceHeadroom
 	}
 
 	return s.headroom
