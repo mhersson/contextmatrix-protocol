@@ -109,14 +109,17 @@ func TestReachabilityUsesEachRolesLadder(t *testing.T) {
 	s.ladders = Ladders{RoleReviewer: map[Tier]float64{TierSimple: 0.65, TierModerate: 0.76, TierComplex: 0.90, TierCritical: 0.95}}
 
 	var coderComplex, reviewerComplex TierReach
+
 	for _, r := range s.Reachability() {
 		if r.Tier == TierComplex && r.Role == RoleCoder {
 			coderComplex = r
 		}
+
 		if r.Tier == TierComplex && r.Role == RoleReviewer {
 			reviewerComplex = r
 		}
 	}
+
 	eq(t, 0.82, coderComplex.Bar)
 	eq(t, 1, coderComplex.Count)
 	eq(t, 0.90, reviewerComplex.Bar)

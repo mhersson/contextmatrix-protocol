@@ -26,6 +26,7 @@ func TestTierBarsFromStringsMergesOverDefaults(t *testing.T) {
 func TestTierBarsFromStringsEmptyIsNil(t *testing.T) {
 	got, err := TierBarsFromStrings(nil)
 	fatalIf(t, err)
+
 	if got != nil {
 		t.Errorf("empty input must yield nil (defaults), got %v", got)
 	}
@@ -63,9 +64,11 @@ func TestLaddersFromWirePerRole(t *testing.T) {
 func TestLaddersFromWireMissingRoleIsAbsent(t *testing.T) {
 	got, err := LaddersFromWire(map[string]map[string]float64{"coder": {"complex": 0.9}})
 	fatalIf(t, err)
+
 	if _, ok := got[RoleReviewer]; ok {
 		t.Error("a role not on the wire must not appear in the ladders")
 	}
+
 	eq(t, 0.82, got.Bars(RoleReviewer)[TierComplex], "Bars falls back to the defaults for an absent role")
 	eq(t, 0.9, got.Bars(RoleCoder)[TierComplex])
 }
@@ -87,13 +90,19 @@ func TestLaddersFromWireRejectsABadRoleLadder(t *testing.T) {
 func TestLaddersFromWireEmptyIsNil(t *testing.T) {
 	got, err := LaddersFromWire(nil)
 	fatalIf(t, err)
+
 	if got != nil {
 		t.Errorf("empty input must yield nil, got %v", got)
 	}
+
 	eq(t, 0.82, Ladders(nil).Bars(RoleCoder)[TierComplex], "nil ladders read as the defaults")
 }
 
-func nan() float64 { var z float64; return z / z }
+func nan() float64 {
+	var z float64
+
+	return z / z
+}
 
 func TestTierBarsFromStrings(t *testing.T) {
 	tests := []struct {

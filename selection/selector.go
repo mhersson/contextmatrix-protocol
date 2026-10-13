@@ -111,7 +111,7 @@ type SelectInput struct {
 // rung with its outcome; FilteredOut summarizes why the rest never got
 // there. A favorite pick reports the pool of the rung it was looked up on,
 // the favorite marked selected.
-type SelectionReport struct {
+type SelectionReport struct { //nolint:revive // exported API used by importers; renaming breaks them
 	Rung Tier
 	Bar  float64
 	Pool []PoolEntry
