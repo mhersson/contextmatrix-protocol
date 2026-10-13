@@ -2,8 +2,8 @@
 
 The CM↔backend wire contract: webhook DTOs, HMAC signing/verification, stable
 error codes. Imported as a Go module by **contextmatrix**,
-**contextmatrix-agent**, and **contextmatrix-chat** - a change here ripples to
-all three, so treat every edit as a public API change.
+**contextmatrix-agent**, **contextmatrix-chat**, and **contextmatrix-backendkit** -
+a change here ripples to all four, so treat every edit as a public API change.
 
 Single flat `package protocol` at the module root. `README.md` is the
 file-by-file contract index; read it before editing a specific DTO.
@@ -22,11 +22,12 @@ file-by-file contract index; read it before editing a specific DTO.
   from any other module. If a change needs one of those it belongs in the
   consumer, and if the line erodes the package moves to its own module.
 - **Never break the wire shape.** Additive change only: new fields are
-  `omitempty`, decoders tolerate unknown fields. Removing or renaming a field, or
-  changing a JSON tag, breaks every consumer.
-- **Versioning:** additive change = minor bump. One-time exception: v0.8.0
-  removed the retired runner backend's surface with a coordinated lockstep
-  release of all consumers; the never-break policy resumes from v0.8.0.
+  `omitempty`, decoders tolerate unknown fields. Renaming a field or changing a JSON
+  tag breaks every consumer; removal follows the retirement rule below.
+- **Versioning:** additive change = minor bump. A field may be retired only
+  after every importer (contextmatrix, contextmatrix-agent, contextmatrix-chat,
+  contextmatrix-backendkit) has dropped it; the retiring commit is marked `!`
+  and ships as a minor bump.
 - **Secrets stay out of logs.** `LLMEndpoint.APIKey`, `GitToken`, `MCPAPIKey`,
   `GitCredentialsToken`, `GuestSpec.Token`, and `TaskSkillsSource.Token` are
   secrets. Never log them.
@@ -34,7 +35,8 @@ file-by-file contract index; read it before editing a specific DTO.
 ## Coding conventions
 
 - Every DTO carries a doc comment; document each non-obvious field inline with its
-  wire semantics and back-compat story (see `chat.go` for the pattern).
+  wire semantics and back-compat story (see `chat.go` for the pattern). These
+  are the wire contract and stay despite the comment rule below.
 - New optional field → `omitempty`. Use a pointer (`*T`) when the consumer must
   distinguish "absent/legacy" from "present but zero".
 - Stable error codes live in `codes.go`. Keep the set small - no codes for one-off
@@ -42,13 +44,6 @@ file-by-file contract index; read it before editing a specific DTO.
   never on `Message`.
 - Response bodies never echo raw `err.Error()` or user-supplied values. The single
   field name in a validation error is the only exception.
-- Comments explain only non-obvious decisions, constraints, safety invariants,
-  or workarounds. Do not narrate what code does or record change history; git
-  holds history. Keep comments to one or two tight lines unless a longer
-  explanation is genuinely necessary. Rewrite or delete if you find comments
-  that don't follow this rule. (DTO and field doc comments are the wire
-  contract - they stay.)
-- Never use em-dashes; use hyphens (-).
 
 ## Key domain rules
 
@@ -63,14 +58,30 @@ file-by-file contract index; read it before editing a specific DTO.
 - **`omitempty` is the back-compat proof:** an absent field marshals to nothing,
   so a pre-multi-user consumer sees byte-identical JSON. The pin tests assert this.
 
+## Documentation
+
+- Documentation must always be true: every statement matches the code at
+  HEAD, and a change that makes a doc line false updates it in the same
+  commit.
+- Document the current state - what exists now and why, not how it got here.
+- Comments explain only non-obvious decisions, constraints, safety invariants,
+  or workarounds. Do not narrate what code does or record change history; git
+  holds history. Keep comments to one or two tight lines unless a longer
+  explanation is genuinely necessary. Rewrite or delete if you find comments
+  that don't follow this rule.
+- Never use em-dashes; use hyphens (-).
+- Never reference plan phases, task numbers, or private card IDs in doc comments.
+
 ## Verification & commit discipline
 
 Run before every commit:
 
 ```bash
-go vet ./...    # must be clean (CI enforces)
-go test ./...   # must be clean (CI enforces) - wire-pin tests are the safety net, and selection package tests cover its determinism
+make fmt && make test && make test-race && make lint && make build
 ```
+
+CI enforces these on every pull request. The wire-pin tests are the safety
+net, and the selection package tests cover its determinism.
 
 The pin tests (`dto_test.go`, `selection_test.go`, `hmac_test.go`) marshal each
 DTO and assert the exact JSON bytes. When you change a field tag on purpose,
@@ -78,16 +89,16 @@ update the expected bytes and confirm the matching decoder in every consumer rep
 When a pin test fails and you did not intend a wire change, you introduced drift -
 fix the code, not the test.
 
-**NEVER** commit without manual approval from the user. No exceptions.
-
-**NEVER** reference a plan phase or task number in commit messages.
-
-**ALWAYS** write conventional commits - `type(scope): concise description`. Keep
-them short and focused; use bullet points in the body for the what and why, no
-long paragraphs.
+- **Never commit to `main`.** Work on a feature branch; tasks of a plan or
+  scope the user approved commit there without asking again. Never push
+  without explicit user approval.
+- Never reference plan phases, task numbers, or private card IDs in commit messages.
+- Write conventional commits - `type(scope): concise description`. Keep them
+  short and focused; use bullet points in the body for the what and why, no
+  long paragraphs.
 
 ```
 feat(selection): add best_of_n trigger field and outcome stats
-refactor(protocol): remove knowledge-base refresh DTOs
+refactor(protocol)!: remove knowledge-base refresh DTOs
 docs(current-state): document what exists now, not how we got here
 ```

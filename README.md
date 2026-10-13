@@ -1,8 +1,8 @@
 # contextmatrix-protocol
 
 The CM↔backend wire contract: webhook DTOs, HMAC signing/verification,
-stable error codes. Imported by contextmatrix, contextmatrix-agent, and
-contextmatrix-chat.
+stable error codes. Imported by contextmatrix,
+contextmatrix-agent, contextmatrix-chat, and contextmatrix-backendkit.
 
 - **Stdlib only.** No dependencies, ever.
 - **One package with logic.** `selection/` is the deterministic reading of
@@ -12,12 +12,10 @@ contextmatrix-chat.
   pure functions only - no logging, no I/O, no run-time state.
 - **Forward-compatible by discipline:** new fields are `omitempty`, decoders
   tolerate unknown fields.
-- **Versioning:** additive change = minor bump; never break the wire shape.
-  One-time exception: v0.8.0 removed the retired runner backend's surface
-  (renamed `runner_image`→`worker_image` and `runner_status`→`worker_status`;
-  deleted the skill-engaged payload, the chat primer and chat git-token
-  fields, three runner-only error codes, and the version constants). All
-  consumers moved in lockstep; the never-break policy resumes from v0.8.0.
+- **Versioning:** additive change = minor bump. A field may be retired only
+  after every importer (contextmatrix, contextmatrix-agent, contextmatrix-chat,
+  contextmatrix-backendkit) has dropped it; the retiring commit is marked `!`
+  and ships as a minor bump.
 
 ## Where the contract lives
 

@@ -23,10 +23,12 @@ func TestSelectionContextWireShape(t *testing.T) {
 		},
 		Blacklist: []string{"bad/model"},
 	}
+
 	b, err := json.Marshal(sc)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	want := `{"candidates":[{"slug":"deepseek/deepseek-v4-flash",` +
 		`"prompt_price_per_tok":0.5,"completion_price_per_tok":1.5,` +
 		`"context_window":200000,"coder_prior":0.9,"reviewer_prior":0.8,` +
@@ -44,6 +46,7 @@ func TestSelectionContextEmptyOmits(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if string(b) != `{}` {
 		t.Errorf("empty SelectionContext should marshal to {}, got %s", b)
 	}
@@ -54,14 +57,17 @@ func TestTriggerPayloadSelectionRoundTrip(t *testing.T) {
 		CardID: "CM-001", Project: "alpha", RepoURL: "r",
 		Selection: &SelectionContext{Blacklist: []string{"x"}},
 	}
+
 	b, err := json.Marshal(p)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	var got TriggerPayload
 	if err := json.Unmarshal(b, &got); err != nil {
 		t.Fatal(err)
 	}
+
 	if got.Selection == nil || len(got.Selection.Blacklist) != 1 || got.Selection.Blacklist[0] != "x" {
 		t.Errorf("Selection did not round-trip: %+v", got.Selection)
 	}
@@ -72,6 +78,7 @@ func TestSelectionOmitsZeroValueFields(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if strings.Contains(string(b), "creator") {
 		t.Errorf("zero-value fields must be omitted, got %s", b)
 	}
@@ -84,6 +91,7 @@ func TestSelectionContextTierBarsWireShape(t *testing.T) {
 			"reviewer": {"simple": 0.65, "moderate": 0.76, "complex": 0.82, "critical": 0.93},
 		},
 	}
+
 	b, err := json.Marshal(sc)
 	if err != nil {
 		t.Fatal(err)
@@ -100,6 +108,7 @@ func TestSelectionContextTierBarsWireShape(t *testing.T) {
 	if err := json.Unmarshal(b, &back); err != nil {
 		t.Fatal(err)
 	}
+
 	if back.TierBars["coder"]["complex"] != 0.9 || back.TierBars["reviewer"]["critical"] != 0.93 {
 		t.Errorf("round trip lost a bar: %+v", back.TierBars)
 	}
@@ -110,6 +119,7 @@ func TestSelectionContextTierBarsAbsentIsOmitted(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if string(b) != `{"blacklist":["x"]}` {
 		t.Errorf("an unset ladder must not appear on the wire: %s", b)
 	}
@@ -120,6 +130,7 @@ func TestSelectionContextPriceHeadroomWire(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if string(b) != `{"price_headroom":2}` {
 		t.Errorf("wire drift: got %s", b)
 	}
@@ -128,6 +139,7 @@ func TestSelectionContextPriceHeadroomWire(t *testing.T) {
 	if err := json.Unmarshal([]byte(`{"price_headroom":1.25}`), &sc); err != nil {
 		t.Fatal(err)
 	}
+
 	if sc.PriceHeadroom != 1.25 {
 		t.Errorf("price_headroom did not round-trip: got %v", sc.PriceHeadroom)
 	}
