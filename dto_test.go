@@ -640,3 +640,110 @@ func TestTriggerPayloadCreateBaseBranchWireShape(t *testing.T) {
 		t.Errorf("legacy payload must decode to zero playbook fields, got %+v", legacy)
 	}
 }
+
+// Pins the lifecycle payloads and webhook response bodies: tags, field order,
+// and omitempty behavior for the zero and fully populated value of each.
+func TestLifecycleAndResponseDTOsWireShape(t *testing.T) {
+	tests := []struct {
+		name string
+		v    any
+		want string
+	}{
+		{"KillPayload zero", KillPayload{}, `{"card_id":"","project":""}`},
+		{
+			"KillPayload full",
+			KillPayload{CardID: "CM-001", Project: "alpha"},
+			`{"card_id":"CM-001","project":"alpha"}`,
+		},
+		{"StopAllPayload zero", StopAllPayload{}, `{}`},
+		{"StopAllPayload full", StopAllPayload{Project: "alpha"}, `{"project":"alpha"}`},
+		{"PromotePayload zero", PromotePayload{}, `{"card_id":"","project":""}`},
+		{
+			"PromotePayload full",
+			PromotePayload{CardID: "CM-001", Project: "alpha"},
+			`{"card_id":"CM-001","project":"alpha"}`,
+		},
+		{"EndSessionPayload zero", EndSessionPayload{}, `{"card_id":"","project":""}`},
+		{
+			"EndSessionPayload full",
+			EndSessionPayload{CardID: "CM-001", Project: "alpha"},
+			`{"card_id":"CM-001","project":"alpha"}`,
+		},
+		{"ChatEndPayload zero", ChatEndPayload{}, `{"session_id":""}`},
+		{"ChatEndPayload full", ChatEndPayload{SessionID: "sess-1"}, `{"session_id":"sess-1"}`},
+		{"SuccessResponse zero", SuccessResponse{}, `{"ok":false}`},
+		{
+			"SuccessResponse full",
+			SuccessResponse{OK: true, Message: "done", MessageID: "msg-1"},
+			`{"ok":true,"message":"done","message_id":"msg-1"}`,
+		},
+		{"CardKillResult zero", CardKillResult{}, `{"ok":false}`},
+		{
+			"CardKillResult full",
+			CardKillResult{CardID: "CM-001", Project: "alpha", OK: true, Error: "boom"},
+			`{"card_id":"CM-001","project":"alpha","ok":true,"error":"boom"}`,
+		},
+		{
+			"ContainerListItem zero",
+			ContainerListItem{},
+			`{"container_id":"","card_id":"","project":"","state":"","started_at":"","tracked":false}`,
+		},
+		{
+			"ContainerListItem full",
+			ContainerListItem{
+				ContainerID: "c1", CardID: "CM-001", SessionID: "sess-1", Project: "alpha",
+				State: "running", StartedAt: "2026-01-02T03:04:05Z", Tracked: true,
+			},
+			`{"container_id":"c1","card_id":"CM-001","session_id":"sess-1","project":"alpha",` +
+				`"state":"running","started_at":"2026-01-02T03:04:05Z","tracked":true}`,
+		},
+		{"ListContainersResponse zero", ListContainersResponse{}, `{"ok":false,"containers":null}`},
+		{
+			"ListContainersResponse full",
+			ListContainersResponse{OK: true, Containers: []ContainerListItem{{
+				ContainerID: "c1", CardID: "CM-001", SessionID: "sess-1", Project: "alpha",
+				State: "running", StartedAt: "2026-01-02T03:04:05Z", Tracked: true,
+			}}},
+			`{"ok":true,"containers":[{"container_id":"c1","card_id":"CM-001","session_id":"sess-1",` +
+				`"project":"alpha","state":"running","started_at":"2026-01-02T03:04:05Z","tracked":true}]}`,
+		},
+		{
+			"StopAllResponse zero",
+			StopAllResponse{},
+			`{"ok":false,"total":0,"stopped":0,"failed":0,"results":null}`,
+		},
+		{
+			"StopAllResponse full",
+			StopAllResponse{OK: true, Total: 2, Stopped: 1, Failed: 1, Results: []CardKillResult{
+				{CardID: "CM-001", Project: "alpha", OK: true},
+				{CardID: "CM-002", Project: "alpha", Error: "boom"},
+			}},
+			`{"ok":true,"total":2,"stopped":1,"failed":1,"results":[` +
+				`{"card_id":"CM-001","project":"alpha","ok":true},` +
+				`{"card_id":"CM-002","project":"alpha","ok":false,"error":"boom"}]}`,
+		},
+		{
+			"HealthResponse zero",
+			HealthResponse{},
+			`{"ok":false,"running_containers":0,"max_concurrent":0}`,
+		},
+		{
+			"HealthResponse full",
+			HealthResponse{OK: true, RunningContainers: 3, MaxConcurrent: 8},
+			`{"ok":true,"running_containers":3,"max_concurrent":8}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b, err := json.Marshal(tt.v)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if string(b) != tt.want {
+				t.Errorf("wire drift:\n got %s\nwant %s", b, tt.want)
+			}
+		})
+	}
+}
