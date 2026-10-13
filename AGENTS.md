@@ -2,8 +2,8 @@
 
 The CM↔backend wire contract: webhook DTOs, HMAC signing/verification, stable
 error codes. Imported as a Go module by **contextmatrix**,
-**contextmatrix-agent**, **contextmatrix-chat**, and **contextmatrix-backendkit**
-- a change here ripples to all four, so treat every edit as a public API change.
+**contextmatrix-agent**, **contextmatrix-chat**, and **contextmatrix-backendkit** -
+a change here ripples to all four, so treat every edit as a public API change.
 
 Single flat `package protocol` at the module root. `README.md` is the
 file-by-file contract index; read it before editing a specific DTO.
