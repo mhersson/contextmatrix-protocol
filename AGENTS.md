@@ -99,6 +99,6 @@ fix the code, not the test.
 
 ```
 feat(selection): add best_of_n trigger field and outcome stats
-refactor(protocol): remove knowledge-base refresh DTOs
+refactor(protocol)!: remove knowledge-base refresh DTOs
 docs(current-state): document what exists now, not how we got here
 ```
