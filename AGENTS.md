@@ -77,9 +77,11 @@ file-by-file contract index; read it before editing a specific DTO.
 Run before every commit:
 
 ```bash
-go vet ./...    # must be clean (CI enforces)
-go test ./...   # must be clean (CI enforces) - wire-pin tests are the safety net, and selection package tests cover its determinism
+make fmt && make test && make test-race && make lint && make build
 ```
+
+CI enforces these on every pull request. The wire-pin tests are the safety
+net, and the selection package tests cover its determinism.
 
 The pin tests (`dto_test.go`, `selection_test.go`, `hmac_test.go`) marshal each
 DTO and assert the exact JSON bytes. When you change a field tag on purpose,
