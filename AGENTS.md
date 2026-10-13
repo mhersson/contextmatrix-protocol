@@ -35,7 +35,8 @@ file-by-file contract index; read it before editing a specific DTO.
 ## Coding conventions
 
 - Every DTO carries a doc comment; document each non-obvious field inline with its
-  wire semantics and back-compat story (see `chat.go` for the pattern).
+  wire semantics and back-compat story (see `chat.go` for the pattern). These
+  are the wire contract and stay despite the comment rule below.
 - New optional field → `omitempty`. Use a pointer (`*T`) when the consumer must
   distinguish "absent/legacy" from "present but zero".
 - Stable error codes live in `codes.go`. Keep the set small - no codes for one-off
@@ -43,13 +44,6 @@ file-by-file contract index; read it before editing a specific DTO.
   never on `Message`.
 - Response bodies never echo raw `err.Error()` or user-supplied values. The single
   field name in a validation error is the only exception.
-- Comments explain only non-obvious decisions, constraints, safety invariants,
-  or workarounds. Do not narrate what code does or record change history; git
-  holds history. Keep comments to one or two tight lines unless a longer
-  explanation is genuinely necessary. Rewrite or delete if you find comments
-  that don't follow this rule. (DTO and field doc comments are the wire
-  contract - they stay.)
-- Never use em-dashes; use hyphens (-).
 
 ## Key domain rules
 
@@ -63,6 +57,20 @@ file-by-file contract index; read it before editing a specific DTO.
 - **`BestOfN` and `Selection` are agent-backend inputs.**
 - **`omitempty` is the back-compat proof:** an absent field marshals to nothing,
   so a pre-multi-user consumer sees byte-identical JSON. The pin tests assert this.
+
+## Documentation
+
+- Documentation must always be true: every statement matches the code at
+  HEAD, and a change that makes a doc line false updates it in the same
+  commit.
+- Document the current state - what exists now and why, not how it got here.
+- Comments explain only non-obvious decisions, constraints, safety invariants,
+  or workarounds. Do not narrate what code does or record change history; git
+  holds history. Keep comments to one or two tight lines unless a longer
+  explanation is genuinely necessary. Rewrite or delete if you find comments
+  that don't follow this rule.
+- Never use em-dashes; use hyphens (-).
+- Never reference plan phases, task numbers, or private card IDs in doc comments.
 
 ## Verification & commit discipline
 
@@ -79,13 +87,13 @@ update the expected bytes and confirm the matching decoder in every consumer rep
 When a pin test fails and you did not intend a wire change, you introduced drift -
 fix the code, not the test.
 
-**NEVER** commit without manual approval from the user. No exceptions.
-
-**NEVER** reference a plan phase or task number in commit messages.
-
-**ALWAYS** write conventional commits - `type(scope): concise description`. Keep
-them short and focused; use bullet points in the body for the what and why, no
-long paragraphs.
+- **Never commit to `main`.** Work on a feature branch; tasks of a plan or
+  scope the user approved commit there without asking again. Never push
+  without explicit user approval.
+- Never reference plan phases, task numbers, or private card IDs in commit messages.
+- Write conventional commits - `type(scope): concise description`. Keep them
+  short and focused; use bullet points in the body for the what and why, no
+  long paragraphs.
 
 ```
 feat(selection): add best_of_n trigger field and outcome stats
