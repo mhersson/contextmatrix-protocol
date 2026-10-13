@@ -2,8 +2,8 @@
 
 The CM↔backend wire contract: webhook DTOs, HMAC signing/verification, stable
 error codes. Imported as a Go module by **contextmatrix**,
-**contextmatrix-agent**, and **contextmatrix-chat** - a change here ripples to
-all three, so treat every edit as a public API change.
+**contextmatrix-agent**, **contextmatrix-chat**, and **contextmatrix-backendkit**
+- a change here ripples to all four, so treat every edit as a public API change.
 
 Single flat `package protocol` at the module root. `README.md` is the
 file-by-file contract index; read it before editing a specific DTO.
@@ -22,11 +22,12 @@ file-by-file contract index; read it before editing a specific DTO.
   from any other module. If a change needs one of those it belongs in the
   consumer, and if the line erodes the package moves to its own module.
 - **Never break the wire shape.** Additive change only: new fields are
-  `omitempty`, decoders tolerate unknown fields. Removing or renaming a field, or
-  changing a JSON tag, breaks every consumer.
-- **Versioning:** additive change = minor bump. One-time exception: v0.8.0
-  removed the retired runner backend's surface with a coordinated lockstep
-  release of all consumers; the never-break policy resumes from v0.8.0.
+  `omitempty`, decoders tolerate unknown fields. Renaming a field or changing a JSON
+  tag breaks every consumer; removal follows the retirement rule below.
+- **Versioning:** additive change = minor bump. A field may be retired only
+  after every importer (contextmatrix, contextmatrix-agent, contextmatrix-chat,
+  contextmatrix-backendkit) has dropped it; the retiring commit is marked `!`
+  and ships as a minor bump.
 - **Secrets stay out of logs.** `LLMEndpoint.APIKey`, `GitToken`, `MCPAPIKey`,
   `GitCredentialsToken`, `GuestSpec.Token`, and `TaskSkillsSource.Token` are
   secrets. Never log them.
