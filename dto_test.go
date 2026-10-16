@@ -559,6 +559,68 @@ func TestLogEntryAgentWireShape(t *testing.T) {
 	}
 }
 
+// Pins reply-button prompts on text frames. TestLogEntryWireShape stays
+// byte-identical, which proves a frame without a prompt is unchanged.
+func TestLogEntryPromptWireShape(t *testing.T) {
+	ts := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+
+	tests := []struct {
+		name   string
+		prompt *LogPrompt
+		want   string
+	}{
+		{
+			name: "gate",
+			prompt: &LogPrompt{ID: "gate:sign-off:v2", Actions: []LogAction{
+				{Label: "Approve", Reply: "approve"},
+				{Label: "Reject", Reply: "reject", Feedback: true},
+			}},
+			want: `{"ts":"2026-01-02T03:04:05Z","type":"text","content":"Pick one.",` +
+				`"prompt":{"id":"gate:sign-off:v2","actions":[{"label":"Approve","reply":"approve"},` +
+				`{"label":"Reject","reply":"reject","feedback":true}]}}`,
+		},
+		{
+			name:   "free-text question",
+			prompt: &LogPrompt{ID: "Q3", FreeText: true, Actions: []LogAction{{Label: "Postgres", Reply: "Postgres"}}},
+			want: `{"ts":"2026-01-02T03:04:05Z","type":"text","content":"Pick one.",` +
+				`"prompt":{"id":"Q3","free_text":true,"actions":[{"label":"Postgres","reply":"Postgres"}]}}`,
+		},
+		{
+			name:   "no id and no actions",
+			prompt: &LogPrompt{FreeText: true},
+			want:   `{"ts":"2026-01-02T03:04:05Z","type":"text","content":"Pick one.","prompt":{"free_text":true}}`,
+		},
+		{
+			name: "absent",
+			want: `{"ts":"2026-01-02T03:04:05Z","type":"text","content":"Pick one."}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			in := LogEntry{Timestamp: ts, Type: "text", Content: "Pick one.", Prompt: tt.prompt}
+
+			b, err := json.Marshal(in)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if string(b) != tt.want {
+				t.Errorf("wire drift:\n got %s\nwant %s", b, tt.want)
+			}
+
+			var out LogEntry
+			if err := json.Unmarshal([]byte(tt.want), &out); err != nil {
+				t.Fatal(err)
+			}
+
+			if !reflect.DeepEqual(in, out) {
+				t.Errorf("round-trip mismatch:\n got %+v\nwant %+v", out, in)
+			}
+		})
+	}
+}
+
 func TestListImagesResponseWireShape(t *testing.T) {
 	b, err := json.Marshal(ListImagesResponse{OK: true, Images: []ImageListItem{{
 		Tags:    []string{"contextmatrix-agent-worker:go-node"},

@@ -34,6 +34,32 @@ type LogEntry struct {
 	// absent from the wire, so consumers that predate mob sessions see
 	// identical bytes.
 	Agent string `json:"agent,omitempty"`
+	// Prompt marks a text frame as a question or gate the panel renders with
+	// reply buttons. Content stays the full readable message, so a consumer
+	// without prompt support shows an ordinary message. Only the architect
+	// sets it; absent on every other frame.
+	Prompt *LogPrompt `json:"prompt,omitempty"`
+}
+
+// LogPrompt is the reply-button half of a prompt frame. Consumers never
+// interpret a reply: a chosen action goes back as an ordinary user message,
+// so the producer's own reply parsing is unchanged.
+type LogPrompt struct {
+	// ID is opaque to consumers, for example a question number or a gate's
+	// stage and version. It labels the prompt and is never matched on.
+	ID string `json:"id,omitempty"`
+	// FreeText means any typed reply answers the prompt, not only an action's.
+	FreeText bool        `json:"free_text,omitempty"`
+	Actions  []LogAction `json:"actions,omitempty"`
+}
+
+// LogAction is one reply button.
+type LogAction struct {
+	Label string `json:"label"`
+	// Reply is the exact message a click sends.
+	Reply string `json:"reply"`
+	// Feedback asks for text first and sends Reply, a space, then the text.
+	Feedback bool `json:"feedback,omitempty"`
 }
 
 // LogTokenUsage carries per-turn token accounting on "usage"-type frames.
