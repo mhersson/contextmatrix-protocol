@@ -29,7 +29,7 @@ index points at the file that owns each part:
 | `callback.go`   | Backend→CM callback body: status.                                                     |
 | `selection.go`  | Model-selection inputs shipped to the agent backend: candidates (prices, priors, creator), favorites, blacklist, per-role tier bars, and the best-value price headroom. |
 | `selection/`    | The selector: tier ladders per role, descent, price band, best value, favorites, panel seats, reachability. Pure functions over the types in `selection.go`. |
-| `logentry.go`   | One `data:` frame on a backend's `/logs` SSE stream, plus per-turn token usage.       |
+| `logentry.go`   | One `data:` frame on a backend's `/logs` SSE stream, plus per-turn token usage and the reply-button prompt a text frame may carry. |
 | `chat.go`       | Chat-mode container payloads: start, resume, end, and the start response.             |
 | `llm.go`        | CM-provisioned inference endpoint config, carried by trigger and chat-start payloads.  |
 | `taskskills.go` | Task-skills repo pointer served by CM to the backends: clone URL, ref, and a short-lived clone token. |
