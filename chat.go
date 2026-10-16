@@ -32,6 +32,10 @@ type ChatStartPayload struct {
 	// forwarded verbatim to the worker. The chat backend fail-closed rejects
 	// a start without it - there is no local fallback.
 	GitCredentialsToken string `json:"git_credentials_token,omitempty"`
+	// Architect is set only when the receiving backend is of kind architect:
+	// the blueprint's target projects, mode and cost cap. The session id is
+	// the blueprint id. Chat backends never receive it.
+	Architect *ArchitectStart `json:"architect,omitempty"`
 }
 
 // ChatResumeContext is the rehydration payload wire shape: the prior
