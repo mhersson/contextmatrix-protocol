@@ -56,3 +56,42 @@ func TestValidArchitectMode(t *testing.T) {
 		}
 	}
 }
+
+func TestArchitectStartPriceWireShape(t *testing.T) {
+	b, err := json.Marshal(ArchitectStart{
+		Projects: []string{"alpha"},
+		Mode:     ArchitectModeDefault,
+		Price: &ModelPrice{
+			PromptUSDPerMTok:     3,
+			CompletionUSDPerMTok: 15,
+			CacheReadUSDPerMTok:  0.3,
+			CacheWriteUSDPerMTok: 3.75,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := `{"projects":["alpha"],"mode":"default","price":{"prompt_usd_per_mtok":3,"completion_usd_per_mtok":15,"cache_read_usd_per_mtok":0.3,"cache_write_usd_per_mtok":3.75}}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+}
+
+func TestArchitectStartPriceRoundTrip(t *testing.T) {
+	in := ArchitectStart{Projects: []string{"alpha"}, Mode: ArchitectModeAuto, Price: &ModelPrice{PromptUSDPerMTok: 1.25, CompletionUSDPerMTok: 10}}
+
+	b, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var out ArchitectStart
+	if err := json.Unmarshal(b, &out); err != nil {
+		t.Fatal(err)
+	}
+
+	if out.Price == nil || *out.Price != *in.Price {
+		t.Errorf("price did not round-trip: got %+v want %+v", out.Price, in.Price)
+	}
+}
