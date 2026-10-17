@@ -12,6 +12,8 @@ type ArchitectStart struct {
 	// rates already resolved. Nil when CM has no price for the model; the
 	// architect then cannot bind a cost cap and must refuse a capped run.
 	Price *ModelPrice `json:"price,omitempty"`
+	// Research is nil when research is off (the default).
+	Research *ResearchStart `json:"research,omitempty"`
 }
 
 // ModelPrice is a model's price in USD per million tokens, one rate per
@@ -22,6 +24,13 @@ type ModelPrice struct {
 	CompletionUSDPerMTok float64 `json:"completion_usd_per_mtok"`
 	CacheReadUSDPerMTok  float64 `json:"cache_read_usd_per_mtok"`
 	CacheWriteUSDPerMTok float64 `json:"cache_write_usd_per_mtok"`
+}
+
+// ResearchStart is the web research setting CM delivers with an architect
+// start: the search provider and its key. APIKey is a secret.
+type ResearchStart struct {
+	Provider string `json:"provider"` // "brave"
+	APIKey   string `json:"api_key"`
 }
 
 // Architect modes, chosen when a blueprint session is created. Default stops

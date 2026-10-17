@@ -26,13 +26,13 @@ index points at the file that owns each part:
 
 | File            | Contract                                                                              |
 | --------------- | ------------------------------------------------------------------------------------- |
-| `task.go`       | CM→backend task lifecycle: trigger, kill, stop-all, message, promote, end-session.    |
+| `task.go`       | CM→backend task lifecycle: trigger, kill, stop-all, message (and the structured answers a question-round reply carries), promote, end-session. |
 | `callback.go`   | Backend→CM callback body: status.                                                     |
 | `selection.go`  | Model-selection inputs shipped to the agent backend: candidates (prices, priors, creator), favorites, blacklist, per-role tier bars, and the best-value price headroom. |
 | `selection/`    | The selector: tier ladders per role, descent, price band, best value, favorites, panel seats, reachability. Pure functions over the types in `selection.go`. |
-| `logentry.go`   | One `data:` frame on a backend's `/logs` SSE stream, plus per-turn token usage, the reply-button prompt a text frame may carry (display text, kind hint, recommended action), and the blueprint transcript marker (stage divider or sheet reference). |
+| `logentry.go`   | One `data:` frame on a backend's `/logs` SSE stream, plus per-turn token usage, the reply-button prompt a text frame may carry (display text, kind hint, recommended action, and the tabbed question round a prompt may carry: questions with options, pros, cons and sources, an assumptions tab, and the stored answers, decisions and chat), and the blueprint transcript marker (stage divider or sheet reference). |
 | `chat.go`       | Chat-mode container payloads: start, resume, end, and the start response.             |
-| `architect.go`  | Blueprint session start fields CM adds to a chat start for the architect backend: target projects, autonomy mode and its constants, cost cap, and the resolved model price. |
+| `architect.go`  | Blueprint session start fields CM adds to a chat start for the architect backend: target projects, autonomy mode and its constants, cost cap, the resolved model price, and the research setting (provider and key; absent when research is off). |
 | `blueprint.go`  | Architect blueprint pane payloads, relayed by CM: the view (pipeline steps, run in flight, open prompt, cost, artifact index with reviews), one stored artifact version, and the live stream's frames and drafts. |
 | `llm.go`        | CM-provisioned inference endpoint config, carried by trigger and chat-start payloads.  |
 | `taskskills.go` | Task-skills repo pointer served by CM to the backends: clone URL, ref, and a short-lived clone token. |

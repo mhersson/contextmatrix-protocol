@@ -54,8 +54,8 @@ type LogPrompt struct {
 	// actions by matching OpenPrompt.PromptID against it; nothing else
 	// matches on it.
 	ID string `json:"id,omitempty"`
-	// Kind is a display hint, "question" or "gate". Consumers style by it,
-	// treat any other value as neutral, and never match on it.
+	// Kind is a display hint, "question", "gate" or "round". Consumers style by
+	// it, treat any other value as neutral, and never match on it.
 	Kind string `json:"kind,omitempty"`
 	// Text is the prompt without its option list or reply instructions, for a
 	// consumer that renders the actions as the answers. Empty means render the
@@ -64,6 +64,12 @@ type LogPrompt struct {
 	// FreeText means any typed reply answers the prompt, not only an action's.
 	FreeText bool        `json:"free_text,omitempty"`
 	Actions  []LogAction `json:"actions,omitempty"`
+	// Round is set on a Kind "round" prompt: a tabbed question round. Actions
+	// and FreeText are unused on it. The architect republishes the same ID
+	// whenever the round changes (answers sent, chat, revised options); a
+	// consumer shows the newest frame for an ID and treats older ones as
+	// history.
+	Round *LogRound `json:"round,omitempty"`
 }
 
 // LogAction is one reply button.
@@ -76,6 +82,92 @@ type LogAction struct {
 	// Recommended marks the producer's suggested answer. The label carries no
 	// "(recommended)" suffix; consumers render the hint themselves.
 	Recommended bool `json:"recommended,omitempty"`
+}
+
+// LogRound is a question round the architect asks: one tab per question,
+// an optional assumptions tab, and what is stored so far.
+type LogRound struct {
+	// Persona asks the round, for the block's header ("system designer").
+	Persona string `json:"persona"`
+	// Stage is the pack stage id that asks.
+	Stage     string          `json:"stage"`
+	Questions []RoundQuestion `json:"questions"`
+	// Assumptions, when set, is the round's last tab: each one accepted or
+	// turned into a question.
+	Assumptions []RoundAssumption `json:"assumptions,omitempty"`
+	// Answers already stored for this round (a partial send, or a reopen).
+	Answers []RoundAnswer `json:"answers,omitempty"`
+	// Decisions already stored on the assumptions tab.
+	Decisions []AssumptionDecision `json:"decisions,omitempty"`
+	// Chat is the "Chat about these questions" thread, oldest first.
+	Chat []RoundChat `json:"chat,omitempty"`
+	// ResearchOff means option sources come from the model's knowledge;
+	// consumers say so instead of showing links.
+	ResearchOff bool `json:"research_off,omitempty"`
+	// Responder means the auto responder answered; consumers show the round
+	// read-only.
+	Responder bool `json:"responder,omitempty"`
+	// Closed means every question is answered and the stage resumed;
+	// consumers collapse the block into its summary.
+	Closed bool `json:"closed,omitempty"`
+}
+
+// RoundQuestion is one tab of a round.
+type RoundQuestion struct {
+	// Number is the blueprint-wide question number, shown as Q<n>.
+	Number  int           `json:"number"`
+	Title   string        `json:"title"` // the tab label, a few words
+	Text    string        `json:"text"`
+	Why     string        `json:"why,omitempty"`
+	Options []RoundOption `json:"options"`
+	// Recommended is the 1-based position of the recommended option; 0 none.
+	Recommended int `json:"recommended,omitempty"`
+}
+
+// RoundOption is one candidate answer with its trade-offs.
+type RoundOption struct {
+	Title   string        `json:"title"`
+	Summary string        `json:"summary,omitempty"`
+	Pros    []string      `json:"pros,omitempty"`
+	Cons    []string      `json:"cons,omitempty"`
+	Sources []RoundSource `json:"sources,omitempty"`
+}
+
+// RoundSource is a source an option rests on.
+type RoundSource struct {
+	// Tag is the architect's source tag (e.g. S3); URL is empty for a code
+	// source. Title is the link text.
+	Tag   string `json:"tag"`
+	Title string `json:"title"`
+	URL   string `json:"url,omitempty"`
+}
+
+// RoundAssumption is one entry of a round's assumptions tab.
+type RoundAssumption struct {
+	ID   string `json:"id"` // A<n>
+	Text string `json:"text"`
+}
+
+// RoundAnswer is one question's stored answer.
+type RoundAnswer struct {
+	Number int `json:"number"` // the question's Number
+	// Option is the chosen option's 1-based position; 0 means Text is the
+	// person's own answer.
+	Option int    `json:"option,omitempty"`
+	Text   string `json:"text,omitempty"`
+}
+
+// AssumptionDecision is one decision on the assumptions tab.
+type AssumptionDecision struct {
+	ID     string `json:"id"`
+	Accept bool   `json:"accept"` // false = turn it into a question
+}
+
+// RoundChat is one message of a round's chat thread.
+type RoundChat struct {
+	// From is "user" or the asking persona's id.
+	From string `json:"from"`
+	Text string `json:"text"`
 }
 
 // LogMarker turns a blueprint transcript row into a stage divider or a

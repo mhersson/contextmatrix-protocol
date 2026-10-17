@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 )
 
@@ -93,5 +94,30 @@ func TestArchitectStartPriceRoundTrip(t *testing.T) {
 
 	if out.Price == nil || *out.Price != *in.Price {
 		t.Errorf("price did not round-trip: got %+v want %+v", out.Price, in.Price)
+	}
+}
+
+// Pins the research setting; TestArchitectStartZeroCostCapOmitted stays
+// byte-identical, which proves research off sends nothing.
+func TestArchitectStartResearchWireShape(t *testing.T) {
+	in := ArchitectStart{Projects: []string{"alpha"}, Mode: ArchitectModeDefault, Research: &ResearchStart{Provider: "brave", APIKey: "k"}}
+
+	b, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := `{"projects":["alpha"],"mode":"default","research":{"provider":"brave","api_key":"k"}}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+
+	var out ArchitectStart
+	if err := json.Unmarshal(b, &out); err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(in, out) {
+		t.Errorf("round-trip mismatch:\n got %+v\nwant %+v", out, in)
 	}
 }

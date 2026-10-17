@@ -100,6 +100,20 @@ type MessagePayload struct {
 	SessionID string `json:"session_id,omitempty"`
 	Content   string `json:"content"`
 	MessageID string `json:"message_id,omitempty"`
+	// Round carries a question round's answers; Content keeps a readable
+	// summary for the transcript. Nil on every other message.
+	Round *RoundReply `json:"round,omitempty"`
+}
+
+// RoundReply is a question round's answers and assumption decisions. A plain
+// message (no Round) while a round is open is a chat message about the
+// round, unless the producer's command parser takes it as a command.
+type RoundReply struct {
+	PromptID  string               `json:"prompt_id"` // round:<n>
+	Answers   []RoundAnswer        `json:"answers,omitempty"`
+	Decisions []AssumptionDecision `json:"decisions,omitempty"`
+	// Final is "Submit all"; false is "Send N now, answer the rest later".
+	Final bool `json:"final,omitempty"`
 }
 
 // PromotePayload is sent by ContextMatrix to switch a running interactive
