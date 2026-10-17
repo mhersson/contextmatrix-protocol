@@ -29,7 +29,7 @@ file-by-file contract index; read it before editing a specific DTO.
   contextmatrix-backendkit) has dropped it; the retiring commit is marked `!`
   and ships as a minor bump.
 - **Secrets stay out of logs.** `LLMEndpoint.APIKey`, `GitToken`, `MCPAPIKey`,
-  `GitCredentialsToken`, `GuestSpec.Token`, and `TaskSkillsSource.Token` are
+  `GitCredentialsToken`, `GuestSpec.Token`, `TaskSkillsSource.Token`, and `ResearchStart.APIKey` are
   secrets. Never log them.
 
 ## Coding conventions

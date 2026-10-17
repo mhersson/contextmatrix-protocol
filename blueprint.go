@@ -93,10 +93,11 @@ type CurrentRun struct {
 // OpenPrompt is the question or gate waiting for the operator.
 type OpenPrompt struct {
 	// PromptID equals the LogPrompt ID of the prompt's transcript row, for
-	// example Q<n>, gate:<stage>:v<n>, gate:signoff:v<n> or emission:v<n>.
+	// example Q<n>, round:<n>, gate:<stage>:v<n>, gate:signoff:v<n> or
+	// emission:v<n>.
 	// Consumers match it by equality and never parse it.
 	PromptID string `json:"prompt_id"`
-	// Kind is "question" or "gate".
+	// Kind is "question", "gate" or "round".
 	Kind string `json:"kind"`
 }
 

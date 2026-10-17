@@ -880,3 +880,124 @@ func TestLifecycleAndResponseDTOsWireShape(t *testing.T) {
 		})
 	}
 }
+
+// Pins question-round prompts. TestLogEntryPromptWireShape stays
+// byte-identical, which proves a prompt without a round is unchanged.
+func TestLogPromptRoundWireShape(t *testing.T) {
+	tests := []struct {
+		name string
+		in   LogPrompt
+		want string
+	}{
+		{
+			name: "full",
+			in: LogPrompt{ID: "round:2", Kind: "round", Round: &LogRound{
+				Persona: "system designer", Stage: "solution_design",
+				Questions: []RoundQuestion{{
+					Number: 3, Title: "Postgres", Text: "How should Postgres run?", Why: "Sessions live there.",
+					Options: []RoundOption{
+						{
+							Title: "Operator", Summary: "Failover and backups.", Pros: []string{"failover"}, Cons: []string{"CRDs"},
+							Sources: []RoundSource{{Tag: "S3", Title: "cloudnative-pg.io", URL: "https://cloudnative-pg.io"}, {Tag: "S1", Title: "alpha"}},
+						},
+						{Title: "StatefulSet"},
+					},
+					Recommended: 1,
+				}},
+				Assumptions: []RoundAssumption{{ID: "A1", Text: "One region."}},
+				Answers:     []RoundAnswer{{Number: 3, Option: 1}, {Number: 4, Text: "my own"}},
+				Decisions:   []AssumptionDecision{{ID: "A1", Accept: true}, {ID: "A2"}},
+				Chat:        []RoundChat{{From: "user", Text: "Why?"}, {From: "system_designer", Text: "Because."}},
+				ResearchOff: true, Responder: true, Closed: true,
+			}},
+			want: `{"id":"round:2","kind":"round","round":{"persona":"system designer","stage":"solution_design",` +
+				`"questions":[{"number":3,"title":"Postgres","text":"How should Postgres run?","why":"Sessions live there.",` +
+				`"options":[{"title":"Operator","summary":"Failover and backups.","pros":["failover"],"cons":["CRDs"],` +
+				`"sources":[{"tag":"S3","title":"cloudnative-pg.io","url":"https://cloudnative-pg.io"},{"tag":"S1","title":"alpha"}]},` +
+				`{"title":"StatefulSet"}],"recommended":1}],` +
+				`"assumptions":[{"id":"A1","text":"One region."}],` +
+				`"answers":[{"number":3,"option":1},{"number":4,"text":"my own"}],` +
+				`"decisions":[{"id":"A1","accept":true},{"id":"A2","accept":false}],` +
+				`"chat":[{"from":"user","text":"Why?"},{"from":"system_designer","text":"Because."}],` +
+				`"research_off":true,"responder":true,"closed":true}}`,
+		},
+		{
+			name: "minimal",
+			in: LogPrompt{ID: "round:1", Kind: "round", Round: &LogRound{
+				Persona: "product owner", Stage: "intake",
+				Questions: []RoundQuestion{{Number: 1, Title: "Scope", Text: "Which users?", Options: []RoundOption{}}},
+			}},
+			want: `{"id":"round:1","kind":"round","round":{"persona":"product owner","stage":"intake",` +
+				`"questions":[{"number":1,"title":"Scope","text":"Which users?","options":[]}]}}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b, err := json.Marshal(tt.in)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if string(b) != tt.want {
+				t.Errorf("wire drift:\n got %s\nwant %s", b, tt.want)
+			}
+
+			var out LogPrompt
+			if err := json.Unmarshal([]byte(tt.want), &out); err != nil {
+				t.Fatal(err)
+			}
+
+			if !reflect.DeepEqual(tt.in, out) {
+				t.Errorf("round-trip mismatch:\n got %+v\nwant %+v", out, tt.in)
+			}
+		})
+	}
+}
+
+// Pins a question-round reply. TestMessagePayloadWireShape stays
+// byte-identical, which proves a message without a round is unchanged.
+func TestMessagePayloadRoundWireShape(t *testing.T) {
+	tests := []struct {
+		name string
+		in   MessagePayload
+		want string
+	}{
+		{
+			name: "final",
+			in: MessagePayload{SessionID: "s1", Content: "Q3: Operator", MessageID: "m1", Round: &RoundReply{
+				PromptID: "round:2", Answers: []RoundAnswer{{Number: 3, Option: 1}},
+				Decisions: []AssumptionDecision{{ID: "A1", Accept: true}}, Final: true,
+			}},
+			want: `{"session_id":"s1","content":"Q3: Operator","message_id":"m1",` +
+				`"round":{"prompt_id":"round:2","answers":[{"number":3,"option":1}],"decisions":[{"id":"A1","accept":true}],"final":true}}`,
+		},
+		{
+			name: "partial without entries",
+			in:   MessagePayload{SessionID: "s1", Content: "", Round: &RoundReply{PromptID: "round:2"}},
+			want: `{"session_id":"s1","content":"","round":{"prompt_id":"round:2"}}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b, err := json.Marshal(tt.in)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if string(b) != tt.want {
+				t.Errorf("wire drift:\n got %s\nwant %s", b, tt.want)
+			}
+
+			var out MessagePayload
+			if err := json.Unmarshal([]byte(tt.want), &out); err != nil {
+				t.Fatal(err)
+			}
+
+			if !reflect.DeepEqual(tt.in, out) {
+				t.Errorf("round-trip mismatch:\n got %+v\nwant %+v", out, tt.in)
+			}
+		})
+	}
+}
