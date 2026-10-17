@@ -20,7 +20,8 @@ contextmatrix-agent, contextmatrix-chat, and contextmatrix-backendkit.
 ## Where the contract lives
 
 The wire contract is documented in source, field by field, with doc comments
-and wire-pin tests (`dto_test.go`, `selection_test.go`, `hmac_test.go`). This
+and wire-pin tests (`dto_test.go`, `architect_test.go`, `blueprint_test.go`,
+`taskskills_test.go`, `selection_test.go`, `hmac_test.go`). This
 index points at the file that owns each part:
 
 | File            | Contract                                                                              |
