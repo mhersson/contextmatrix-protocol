@@ -16,7 +16,15 @@ type BlueprintView struct {
 	ID string `json:"id"`
 	// Mode is one of the ArchitectMode constants.
 	Mode string `json:"mode"`
-	// State is the architect's coarse blueprint state.
+	// State is the architect's coarse lifecycle state: new (no need stated
+	// yet), running (a run is in flight), waiting (a question, gate or
+	// sign-off waits for the operator), idle (nothing runs; the next message
+	// decides what follows), failed (a run or step failed; the next message
+	// retries it), emitting (the approved cards are being created), emitted
+	// (the cards exist; the watch may still report on them) or done (the
+	// watch posted its closing summary). Consumers may branch on it for
+	// display, but step statuses and Open carry the detail. New states may be
+	// added, so render an unknown State neutrally.
 	State string `json:"state"`
 	// Seq is the id of the newest architect events row the view reflects, so
 	// it keeps rising across architect restarts. A consumer always applies a
@@ -43,10 +51,25 @@ type PipelineStep struct {
 	FoldsInto string `json:"folds_into,omitempty"`
 	// Status is one of: pending, running, reviewing, revising, waiting, done,
 	// failed, folded, skipped.
-	Status        string  `json:"status"`
-	Attempt       int     `json:"attempt,omitempty"`
-	Round         int     `json:"round,omitempty"`
-	MaxRounds     int     `json:"max_rounds,omitempty"`
+	Status string `json:"status"`
+	// Attempt is the attempt number of the step's newest stage run, from 1;
+	// 0 until the stage first runs, and for signoff and emission. A fresh run
+	// (the first, or a re-run after a failure, an abort, a gate rejection or
+	// a readiness loop) starts a new attempt; builder rounds after a review
+	// continue it.
+	Attempt int `json:"attempt,omitempty"`
+	// Round is set only on a loop stage (readiness): the loop round since the
+	// sign-off's latest rejection, from 1, counting a run in flight ("round 2
+	// of 3"). It is not the review or revision round; 0 on every other step
+	// and before the loop stage first runs.
+	Round int `json:"round,omitempty"`
+	// MaxRounds is the most rounds a loop stage runs (the pack's max_rounds);
+	// 0 elsewhere.
+	MaxRounds int `json:"max_rounds,omitempty"`
+	// LatestVersion is the newest stored version of the step's artifact, from
+	// 1; 0 when none is stored. For signoff it is the readiness version the
+	// latest sign-off judged (the n of gate:signoff:v<n>); for emission, 1
+	// once the cards exist.
 	LatestVersion int     `json:"latest_version,omitempty"`
 	CostUSD       float64 `json:"cost_usd"`
 }
@@ -61,7 +84,10 @@ type CurrentRun struct {
 	StartedAt time.Time `json:"started_at"`
 	Turns     int       `json:"turns"`
 	ToolCalls int       `json:"tool_calls"`
-	Tokens    int64     `json:"tokens"`
+	// Tokens sums the usage buckets of the innermost run in flight (a
+	// responder inside its stage run, else the run itself): prompt tokens
+	// excluding the cached part, completion, cache-read and cache-write.
+	Tokens int64 `json:"tokens"`
 }
 
 // OpenPrompt is the question or gate waiting for the operator.
@@ -78,7 +104,10 @@ type OpenPrompt struct {
 // estimate.
 type BlueprintCost struct {
 	// SpentUSD is the ledger plus the in-flight run.
-	SpentUSD    float64 `json:"spent_usd"`
+	SpentUSD float64 `json:"spent_usd"`
+	// RunSpentUSD is what the outermost run in flight (the stage or reviewer
+	// run the per-run cap binds) has spent so far, its responder runs
+	// included; compare it with RunCapUSD. 0 when no run is in flight.
 	RunSpentUSD float64 `json:"run_spent_usd"`
 	// CapUSD is the blueprint cap; 0 means no blueprint cap.
 	CapUSD float64 `json:"cap_usd"`
