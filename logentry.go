@@ -50,7 +50,9 @@ type LogEntry struct {
 // so the producer's own reply parsing is unchanged.
 type LogPrompt struct {
 	// ID is opaque to consumers, for example a question number or a gate's
-	// stage and version. It labels the prompt and is never matched on.
+	// stage and version. The blueprint gate bar finds the open prompt's
+	// actions by matching OpenPrompt.PromptID against it; nothing else
+	// matches on it.
 	ID string `json:"id,omitempty"`
 	// Kind is a display hint, "question" or "gate". Consumers style by it,
 	// treat any other value as neutral, and never match on it.
