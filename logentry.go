@@ -107,7 +107,8 @@ type LogRound struct {
 	// Responder means the auto responder answered; consumers show the round
 	// read-only.
 	Responder bool `json:"responder,omitempty"`
-	// Closed means every question is answered and the stage resumed;
+	// Closed means the round takes no more answers: every question is
+	// answered and the stage resumed, or the pipeline went past it;
 	// consumers collapse the block into its summary.
 	Closed bool `json:"closed,omitempty"`
 }
