@@ -48,6 +48,13 @@ type LogPrompt struct {
 	// ID is opaque to consumers, for example a question number or a gate's
 	// stage and version. It labels the prompt and is never matched on.
 	ID string `json:"id,omitempty"`
+	// Kind is a display hint, "question" or "gate". Consumers style by it,
+	// treat any other value as neutral, and never match on it.
+	Kind string `json:"kind,omitempty"`
+	// Text is the prompt without its option list or reply instructions, for a
+	// consumer that renders the actions as the answers. Empty means render the
+	// frame's Content, which stays the full fallback message.
+	Text string `json:"text,omitempty"`
 	// FreeText means any typed reply answers the prompt, not only an action's.
 	FreeText bool        `json:"free_text,omitempty"`
 	Actions  []LogAction `json:"actions,omitempty"`
@@ -60,6 +67,9 @@ type LogAction struct {
 	Reply string `json:"reply"`
 	// Feedback asks for text first and sends Reply, a space, then the text.
 	Feedback bool `json:"feedback,omitempty"`
+	// Recommended marks the producer's suggested answer. The label carries no
+	// "(recommended)" suffix; consumers render the hint themselves.
+	Recommended bool `json:"recommended,omitempty"`
 }
 
 // LogTokenUsage carries per-turn token accounting on "usage"-type frames.

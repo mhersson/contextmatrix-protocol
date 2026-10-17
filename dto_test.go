@@ -591,6 +591,16 @@ func TestLogEntryPromptWireShape(t *testing.T) {
 			want:   `{"ts":"2026-01-02T03:04:05Z","type":"text","content":"Pick one.","prompt":{"free_text":true}}`,
 		},
 		{
+			name: "display fields",
+			prompt: &LogPrompt{ID: "Q1", Kind: "question", Text: "Which database?", FreeText: true, Actions: []LogAction{
+				{Label: "Postgres", Reply: "1", Recommended: true},
+				{Label: "SQLite", Reply: "2"},
+			}},
+			want: `{"ts":"2026-01-02T03:04:05Z","type":"text","content":"Pick one.",` +
+				`"prompt":{"id":"Q1","kind":"question","text":"Which database?","free_text":true,` +
+				`"actions":[{"label":"Postgres","reply":"1","recommended":true},{"label":"SQLite","reply":"2"}]}}`,
+		},
+		{
 			name: "absent",
 			want: `{"ts":"2026-01-02T03:04:05Z","type":"text","content":"Pick one."}`,
 		},
