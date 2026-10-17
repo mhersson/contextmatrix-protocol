@@ -83,8 +83,9 @@ make fmt && make test && make test-race && make lint && make build
 CI enforces these on every pull request. The wire-pin tests are the safety
 net, and the selection package tests cover its determinism.
 
-The pin tests (`dto_test.go`, `selection_test.go`, `hmac_test.go`) marshal each
-DTO and assert the exact JSON bytes. When you change a field tag on purpose,
+The pin tests (`dto_test.go`, `architect_test.go`, `blueprint_test.go`,
+`taskskills_test.go`, `selection_test.go`, `hmac_test.go`) marshal each DTO and
+assert the exact JSON bytes. When you change a field tag on purpose,
 update the expected bytes and confirm the matching decoder in every consumer repo.
 When a pin test fails and you did not intend a wire change, you introduced drift -
 fix the code, not the test.

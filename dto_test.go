@@ -631,6 +631,67 @@ func TestLogEntryPromptWireShape(t *testing.T) {
 	}
 }
 
+// Pins blueprint transcript markers. TestLogEntryWireShape stays
+// byte-identical, which proves a frame without a marker is unchanged.
+func TestLogEntryMarkerWireShape(t *testing.T) {
+	ts := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+
+	tests := []struct {
+		name    string
+		typ     string
+		content string
+		marker  *LogMarker
+		want    string
+	}{
+		{
+			name:    "stage divider",
+			typ:     "system",
+			content: "Design - System designer",
+			marker:  &LogMarker{Kind: "stage", Stage: "solution_design", Persona: "System designer"},
+			want: `{"ts":"2026-01-02T03:04:05Z","type":"system","content":"Design - System designer",` +
+				`"marker":{"kind":"stage","stage":"solution_design","persona":"System designer"}}`,
+		},
+		{
+			name:    "sheet reference",
+			typ:     "text",
+			content: "Design rev 2: revised for the 3 findings",
+			marker:  &LogMarker{Kind: "artifact", Stage: "solution_design", Version: 2, Note: "Revised for the 3 findings"},
+			want: `{"ts":"2026-01-02T03:04:05Z","type":"text","content":"Design rev 2: revised for the 3 findings",` +
+				`"marker":{"kind":"artifact","stage":"solution_design","version":2,"note":"Revised for the 3 findings"}}`,
+		},
+		{
+			name:    "absent",
+			typ:     "text",
+			content: "Design rev 2",
+			want:    `{"ts":"2026-01-02T03:04:05Z","type":"text","content":"Design rev 2"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			in := LogEntry{Timestamp: ts, Type: tt.typ, Content: tt.content, Marker: tt.marker}
+
+			b, err := json.Marshal(in)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if string(b) != tt.want {
+				t.Errorf("wire drift:\n got %s\nwant %s", b, tt.want)
+			}
+
+			var out LogEntry
+			if err := json.Unmarshal([]byte(tt.want), &out); err != nil {
+				t.Fatal(err)
+			}
+
+			if !reflect.DeepEqual(in, out) {
+				t.Errorf("round-trip mismatch:\n got %+v\nwant %+v", out, in)
+			}
+		})
+	}
+}
+
 func TestListImagesResponseWireShape(t *testing.T) {
 	b, err := json.Marshal(ListImagesResponse{OK: true, Images: []ImageListItem{{
 		Tags:    []string{"contextmatrix-agent-worker:go-node"},

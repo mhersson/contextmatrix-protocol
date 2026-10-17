@@ -20,7 +20,8 @@ contextmatrix-agent, contextmatrix-chat, and contextmatrix-backendkit.
 ## Where the contract lives
 
 The wire contract is documented in source, field by field, with doc comments
-and wire-pin tests (`dto_test.go`, `selection_test.go`, `hmac_test.go`). This
+and wire-pin tests (`dto_test.go`, `architect_test.go`, `blueprint_test.go`,
+`taskskills_test.go`, `selection_test.go`, `hmac_test.go`). This
 index points at the file that owns each part:
 
 | File            | Contract                                                                              |
@@ -29,8 +30,10 @@ index points at the file that owns each part:
 | `callback.go`   | Backend→CM callback body: status.                                                     |
 | `selection.go`  | Model-selection inputs shipped to the agent backend: candidates (prices, priors, creator), favorites, blacklist, per-role tier bars, and the best-value price headroom. |
 | `selection/`    | The selector: tier ladders per role, descent, price band, best value, favorites, panel seats, reachability. Pure functions over the types in `selection.go`. |
-| `logentry.go`   | One `data:` frame on a backend's `/logs` SSE stream, plus per-turn token usage and the reply-button prompt a text frame may carry, with its display text, kind hint and recommended action. |
+| `logentry.go`   | One `data:` frame on a backend's `/logs` SSE stream, plus per-turn token usage, the reply-button prompt a text frame may carry (display text, kind hint, recommended action), and the blueprint transcript marker (stage divider or sheet reference). |
 | `chat.go`       | Chat-mode container payloads: start, resume, end, and the start response.             |
+| `architect.go`  | Blueprint session start fields CM adds to a chat start for the architect backend: target projects, autonomy mode and its constants, cost cap, and the resolved model price. |
+| `blueprint.go`  | Architect blueprint pane payloads, relayed by CM: the view (pipeline steps, run in flight, open prompt, cost, artifact index with reviews), one stored artifact version, and the live stream's frames and drafts. |
 | `llm.go`        | CM-provisioned inference endpoint config, carried by trigger and chat-start payloads.  |
 | `taskskills.go` | Task-skills repo pointer served by CM to the backends: clone URL, ref, and a short-lived clone token. |
 | `verify.go`     | Operator-declared verify gate (command, timeout, env allowlist), carried by the trigger payload. |

@@ -39,6 +39,10 @@ type LogEntry struct {
 	// without prompt support shows an ordinary message. Only the architect
 	// sets it; absent on every other frame.
 	Prompt *LogPrompt `json:"prompt,omitempty"`
+	// Marker turns the frame into a blueprint transcript marker. Content stays
+	// a plain fallback line, so a consumer without marker support shows an
+	// ordinary row. Only the architect sets it; absent on every other frame.
+	Marker *LogMarker `json:"marker,omitempty"`
 }
 
 // LogPrompt is the reply-button half of a prompt frame. Consumers never
@@ -46,7 +50,9 @@ type LogEntry struct {
 // so the producer's own reply parsing is unchanged.
 type LogPrompt struct {
 	// ID is opaque to consumers, for example a question number or a gate's
-	// stage and version. It labels the prompt and is never matched on.
+	// stage and version. The blueprint gate bar finds the open prompt's
+	// actions by matching OpenPrompt.PromptID against it; nothing else
+	// matches on it.
 	ID string `json:"id,omitempty"`
 	// Kind is a display hint, "question" or "gate". Consumers style by it,
 	// treat any other value as neutral, and never match on it.
@@ -70,6 +76,24 @@ type LogAction struct {
 	// Recommended marks the producer's suggested answer. The label carries no
 	// "(recommended)" suffix; consumers render the hint themselves.
 	Recommended bool `json:"recommended,omitempty"`
+}
+
+// LogMarker turns a blueprint transcript row into a stage divider or a
+// sheet reference; the frame's Content keeps a plain fallback line.
+type LogMarker struct {
+	// Kind is "stage" (a stage divider, on a "system" frame) or "artifact"
+	// (a sheet reference that opens Stage at Version, on a "text" frame), so
+	// a consumer without marker support shows the fallback as a fitting row.
+	// A consumer shows Content for any other Kind.
+	Kind  string `json:"kind"`
+	Stage string `json:"stage"`
+	// Persona is who runs the stage, on a stage divider.
+	Persona string `json:"persona,omitempty"`
+	// Version is the artifact version a sheet reference opens.
+	Version int `json:"version,omitempty"`
+	// Note is a sheet reference's one-line summary, for example a review
+	// outcome or who approved the version.
+	Note string `json:"note,omitempty"`
 }
 
 // LogTokenUsage carries per-turn token accounting on "usage"-type frames.
