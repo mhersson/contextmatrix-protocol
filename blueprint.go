@@ -66,8 +66,9 @@ type CurrentRun struct {
 
 // OpenPrompt is the question or gate waiting for the operator.
 type OpenPrompt struct {
-	// PromptID is the LogPrompt ID of the prompt's transcript row: Q<n>,
-	// gate:<stage>:v<n> or gate:signoff:v<n>.
+	// PromptID equals the LogPrompt ID of the prompt's transcript row, for
+	// example Q<n>, gate:<stage>:v<n>, gate:signoff:v<n> or emission:v<n>.
+	// Consumers match it by equality and never parse it.
 	PromptID string `json:"prompt_id"`
 	// Kind is "question" or "gate".
 	Kind string `json:"kind"`
@@ -145,7 +146,9 @@ type BlueprintArtifact struct {
 type LiveFrame struct {
 	// Type is "snapshot" (View plus the current Draft in full at offset 0),
 	// "artifact_stored" (Stage at Version is stored; fetch it) or "draft"
-	// (the next Draft fragment).
+	// (the next Draft fragment). A snapshot without Draft means no draft is
+	// in progress, so the consumer drops any held draft. A consumer ignores a
+	// frame of any other Type.
 	Type    string         `json:"type"`
 	View    *BlueprintView `json:"view,omitempty"`
 	Draft   *Draft         `json:"draft,omitempty"`
@@ -158,10 +161,10 @@ type Draft struct {
 	Stage   string `json:"stage"`
 	Version int    `json:"version"`
 	// Offset is how many Unicode code points (Go runes, not bytes or UTF-16
-	// units) were sent before Text. Offset 0 replaces the held text, an
-	// Offset equal to the held length appends, and any other Offset means
-	// frames were missed: the consumer drops the frame and waits for the next
-	// snapshot LiveFrame.
+	// units; in JS, Array.from(text).length) were sent before Text. Offset 0
+	// replaces the held text, an Offset equal to the held length appends, and
+	// any other Offset means frames were missed: the consumer drops the frame
+	// and waits for the next snapshot LiveFrame.
 	Offset int    `json:"offset"`
 	Text   string `json:"text"`
 	// Refused marks a draft the contract checks refused, with the check
