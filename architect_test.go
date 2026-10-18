@@ -121,3 +121,25 @@ func TestArchitectStartResearchWireShape(t *testing.T) {
 		t.Errorf("round-trip mismatch:\n got %+v\nwant %+v", out, in)
 	}
 }
+
+// The window CM knows for the session's model rides the start; an unknown
+// one stays off the wire.
+func TestArchitectStartContextWindowWireShape(t *testing.T) {
+	b, err := json.Marshal(ArchitectStart{Projects: []string{"alpha"}, Mode: ArchitectModeDefault, ContextWindow: 200000})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if want := `{"projects":["alpha"],"mode":"default","context_window":200000}`; string(b) != want {
+		t.Errorf("got %s want %s", b, want)
+	}
+
+	var back ArchitectStart
+	if err := json.Unmarshal(b, &back); err != nil {
+		t.Fatal(err)
+	}
+
+	if back.ContextWindow != 200000 {
+		t.Errorf("round trip lost the window: %+v", back)
+	}
+}

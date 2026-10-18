@@ -1,9 +1,9 @@
 package protocol
 
 // ArchitectStart carries what a blueprint session needs beyond the chat
-// fields: the target projects, the autonomy mode, the cost cap and the price
-// of the session's model. CM sets it only on starts to an architect-kind
-// backend; chat backends never see it.
+// fields: the target projects, the autonomy mode, the cost cap, the price and
+// the context window of the session's model. CM sets it only on starts to an
+// architect-kind backend; chat backends never see it.
 type ArchitectStart struct {
 	Projects   []string `json:"projects"`
 	Mode       string   `json:"mode"`
@@ -12,6 +12,10 @@ type ArchitectStart struct {
 	// rates already resolved. Nil when CM has no price for the model; the
 	// architect then cannot bind a cost cap and must refuse a capped run.
 	Price *ModelPrice `json:"price,omitempty"`
+	// ContextWindow is the model's context length in tokens from CM's model
+	// catalog; 0 when CM does not know it, and the architect then falls back
+	// to its own default.
+	ContextWindow int `json:"context_window,omitempty"`
 	// Research is nil when research is off (the default).
 	Research *ResearchStart `json:"research,omitempty"`
 }

@@ -173,7 +173,14 @@ type ArtifactReview struct {
 	// above Threshold and no open critical finding.
 	Passed bool `json:"passed"`
 	// Round is the reviewer round within the stage attempt, 1-based.
-	Round    int             `json:"round,omitempty"`
+	Round int `json:"round,omitempty"`
+	// MaxRounds is the most reviewer rounds the stage's attempt runs (the
+	// architect's reviewer round cap); 0 when unknown.
+	MaxRounds int `json:"max_rounds,omitempty"`
+	// Summary is the reviewer's own short account of the review: what it read
+	// and checked and its overall judgement, in plain prose, without the
+	// findings list or the verdict JSON. Empty when the reviewer gave none.
+	Summary  string          `json:"summary,omitempty"`
 	Findings []ReviewFinding `json:"findings"`
 }
 
@@ -194,6 +201,10 @@ type ReviewFinding struct {
 	// VerifiedIn is the version a later round checked this finding against;
 	// zero while it is only open.
 	VerifiedIn int `json:"verified_in,omitempty"`
+	// ReviewerNote is the reviewer's note on a re-checked finding: what the
+	// version in VerifiedIn shows about it. Empty on a finding raised in this
+	// review. AddressedNote stays the builder's claim.
+	ReviewerNote string `json:"reviewer_note,omitempty"`
 	// SentTo is the revision version the finding went to.
 	SentTo int `json:"sent_to,omitempty"`
 	// AddressedIn, AddressedBy and AddressedNote are set only when the run

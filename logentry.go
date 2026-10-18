@@ -174,20 +174,26 @@ type RoundChat struct {
 	Text string `json:"text"`
 }
 
-// LogMarker turns a blueprint transcript row into a stage divider or a
-// sheet reference; the frame's Content keeps a plain fallback line. A sheet
-// reference opens Stage at Version for Slice; a stage divider and a round
-// header name the slice when the blueprint has two or more.
+// LogMarker turns a blueprint transcript row into a stage divider, a sheet
+// reference or a review; the frame's Content keeps a plain fallback line. A
+// sheet reference opens Stage at Version for Slice; a review renders the
+// view's review of Stage at Version for Slice; a stage divider and a round
+// header name the slice when the blueprint has two or more. Rows stored
+// before v0.30.0 carry no review marker and stay text.
 type LogMarker struct {
-	// Kind is "stage" (a stage divider, on a "system" frame) or "artifact"
-	// (a sheet reference that opens Stage at Version, on a "text" frame), so
-	// a consumer without marker support shows the fallback as a fitting row.
-	// A consumer shows Content for any other Kind.
+	// Kind is "stage" (a stage divider, on a "system" frame), "artifact" (a
+	// sheet reference that opens Stage at Version, on a "text" frame) or
+	// "review" (a reviewer's verdict on Stage at Version for Slice, on a
+	// "text" frame, rendered from the view's review for that version), so a
+	// consumer without marker support shows the fallback as a fitting row.
+	// A consumer shows Content for any other Kind, and for a review whose
+	// version the view does not hold.
 	Kind  string `json:"kind"`
 	Stage string `json:"stage"`
 	// Slice is the piece the stage runs for; "" for the whole blueprint.
 	Slice string `json:"slice,omitempty"`
-	// Persona is who runs the stage, on a stage divider.
+	// Persona is who runs the stage, on a stage divider; the reviewer, on a
+	// review marker.
 	Persona string `json:"persona,omitempty"`
 	// Version is the artifact version a sheet reference opens.
 	Version int `json:"version,omitempty"`
