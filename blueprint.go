@@ -127,24 +127,50 @@ type ArtifactRef struct {
 	// superseded, folded.
 	Status    string     `json:"status"`
 	DecidedAt *time.Time `json:"decided_at,omitempty"`
-	// DecidedBy is "you", "responder" or "automatic".
+	// DecidedBy is "you" or "automatic": a human, or the auto policy on the
+	// reviewer's verdict for a stage gate and an emitting mode for a
+	// sign-off. An architect before v0.28.0 sent "responder" for an auto
+	// stage gate; read it as "automatic".
 	DecidedBy string          `json:"decided_by,omitempty"`
 	Review    *ArtifactReview `json:"review,omitempty"`
 }
 
-// ArtifactReview is the reviewer's verdict on one artifact version.
+// ArtifactReview is the reviewer's verdict on one artifact version. Each
+// review lists every finding its round judged: the prior findings it
+// re-checked, keeping their ID with Status fixed or still_open and
+// VerifiedIn set to the reviewed version, and its new findings with Status
+// open. An earlier version's review is never rewritten. SentTo and the
+// Addressed fields keep their meaning: what the version the finding was
+// sent to claimed about it.
 type ArtifactReview struct {
-	Reviewer  string          `json:"reviewer"`
-	Score     int             `json:"score"`
-	Threshold int             `json:"threshold"`
-	Findings  []ReviewFinding `json:"findings"`
+	Reviewer  string `json:"reviewer"`
+	Score     int    `json:"score"`
+	Threshold int    `json:"threshold"`
+	// Passed is the reviewer's verdict under the pack's rule: score at or
+	// above Threshold and no open critical finding.
+	Passed bool `json:"passed"`
+	// Round is the reviewer round within the stage attempt, 1-based.
+	Round    int             `json:"round,omitempty"`
+	Findings []ReviewFinding `json:"findings"`
 }
 
-// ReviewFinding is one reviewer finding and what became of it. A revised
-// version is never re-reviewed, so the Addressed fields record only what the
-// revising run said, never that the finding is fixed.
+// ReviewFinding is one finding of a review's ledger. Every revision is
+// re-reviewed, so Status is the reviewer's verdict, and the Addressed fields
+// stay the builder's claim beside it, never proof that it is fixed.
 type ReviewFinding struct {
-	Text string `json:"text"`
+	// ID is stable within the stage attempt (R1, R2, ...); a later round's
+	// verdict on the same finding keeps its ID.
+	ID string `json:"id"`
+	// Severity is "critical", "major" or "minor".
+	Severity string `json:"severity"`
+	Text     string `json:"text"`
+	// Status is the reviewer's verdict: "open" when raised in this review,
+	// "fixed" or "still_open" when a later round re-checked it against the
+	// version in VerifiedIn.
+	Status string `json:"status"`
+	// VerifiedIn is the version a later round checked this finding against;
+	// zero while it is only open.
+	VerifiedIn int `json:"verified_in,omitempty"`
 	// SentTo is the revision version the finding went to.
 	SentTo int `json:"sent_to,omitempty"`
 	// AddressedIn, AddressedBy and AddressedNote are set only when the run
