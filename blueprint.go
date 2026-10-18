@@ -37,7 +37,8 @@ type BlueprintView struct {
 	Cost      BlueprintCost  `json:"cost"`
 	Artifacts []ArtifactRef  `json:"artifacts"`
 	// Slices lists the pieces of the newest stored slicing version in slicing
-	// order; [] before slicing stores one. Consumers show slice tabs, the
+	// order; [] before slicing stores one, and [] when no stage of the
+	// blueprint's pack repeats per slice. Consumers show slice tabs, the
 	// grouped scale bar and slice names only with two or more.
 	Slices []BlueprintSlice `json:"slices"`
 }
