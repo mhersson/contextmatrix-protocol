@@ -76,7 +76,7 @@ func TestBlueprintViewWireShape(t *testing.T) {
 		`"decided_at":"2026-10-17T09:45:00Z","decided_by":"you",` +
 		`"review":{"reviewer":"Senior developer","score":3,"threshold":4,"passed":false,"round":1,"findings":[` +
 		`{"id":"R1","severity":"critical","text":"No rollback plan","status":"open","sent_to":2,"addressed_in":2,"addressed_by":"System designer","addressed_note":"Added D4"},` +
-		`{"id":"R2","severity":"minor","text":"Naming","status":"open","sent_to":2}]}}]}`
+		`{"id":"R2","severity":"minor","text":"Naming","status":"open","sent_to":2}]}}],"slices":null}`
 
 	pinRoundTrip(t, v, want)
 }
@@ -87,7 +87,7 @@ func TestBlueprintViewWireShape(t *testing.T) {
 func TestBlueprintZeroValuesStayOnTheWire(t *testing.T) {
 	pinRoundTrip(t, BlueprintView{ID: "s1", Mode: ArchitectModeAuto, State: "new"},
 		`{"id":"s1","mode":"auto","state":"new","seq":0,"pipeline":null,`+
-			`"cost":{"spent_usd":0,"run_spent_usd":0,"cap_usd":0,"run_cap_usd":0,"priced":false},"artifacts":null}`)
+			`"cost":{"spent_usd":0,"run_spent_usd":0,"cap_usd":0,"run_cap_usd":0,"priced":false},"artifacts":null,"slices":null}`)
 
 	pinRoundTrip(t, PipelineStep{Stage: "intake", Status: "pending"},
 		`{"stage":"intake","persona":"","gate":false,"status":"pending","cost_usd":0}`)
@@ -131,11 +131,11 @@ func TestLiveFrameWireShape(t *testing.T) {
 			name: "snapshot with the full draft",
 			in: LiveFrame{
 				Type:  "snapshot",
-				View:  &BlueprintView{ID: "s1", Mode: ArchitectModeAuto, State: "running", Seq: 3, Pipeline: []PipelineStep{}, Artifacts: []ArtifactRef{}},
+				View:  &BlueprintView{ID: "s1", Mode: ArchitectModeAuto, State: "running", Seq: 3, Pipeline: []PipelineStep{}, Artifacts: []ArtifactRef{}, Slices: []BlueprintSlice{}},
 				Draft: &Draft{Stage: "solution_design", Version: 2, Text: "# Design"},
 			},
 			want: `{"type":"snapshot","view":{"id":"s1","mode":"auto","state":"running","seq":3,"pipeline":[],` +
-				`"cost":{"spent_usd":0,"run_spent_usd":0,"cap_usd":0,"run_cap_usd":0,"priced":false},"artifacts":[]},` +
+				`"cost":{"spent_usd":0,"run_spent_usd":0,"cap_usd":0,"run_cap_usd":0,"priced":false},"artifacts":[],"slices":[]},` +
 				`"draft":{"stage":"solution_design","version":2,"offset":0,"text":"# Design"}}`,
 		},
 		{
@@ -178,4 +178,40 @@ func TestArtifactReviewWireShape(t *testing.T) {
 
 	pinRoundTrip(t, ArtifactReview{Reviewer: "tester", Score: 2, Threshold: 4, Findings: []ReviewFinding{}},
 		`{"reviewer":"tester","score":2,"threshold":4,"passed":false,"findings":[]}`)
+}
+
+// A per-slice step, run, artifact, frame and draft carry their slice; a
+// whole-blueprint one leaves it off the wire. The view lists the slices in
+// slicing order, and a per-slice gate's id carries its slice.
+func TestBlueprintSlicesWireShape(t *testing.T) {
+	created := time.Date(2026, 10, 18, 9, 0, 0, 0, time.UTC)
+
+	pinRoundTrip(t, BlueprintView{
+		ID: "s1", Mode: ArchitectModeDefault, State: "waiting", Seq: 9,
+		Pipeline: []PipelineStep{
+			{Stage: "shared_decisions", Persona: "system_designer", Gate: true, Policy: "human", Status: "done", LatestVersion: 1},
+			{Stage: "solution_design", Slice: "SL2", Persona: "system_designer", Gate: true, Policy: "human", Status: "waiting", Attempt: 1, LatestVersion: 1},
+		},
+		Current:   &CurrentRun{Stage: "grounding", Slice: "SL1", Kind: "stage", Persona: "senior_developer", Model: "m", StartedAt: created},
+		Open:      &OpenPrompt{PromptID: "gate:solution_design:SL2:v1", Kind: "gate"},
+		Artifacts: []ArtifactRef{{Stage: "solution_design", Slice: "SL2", Version: 1, CreatedAt: created, Status: "at_gate"}},
+		Slices:    []BlueprintSlice{{ID: "SL1", Title: "Export one report"}, {ID: "SL2", Title: "Schedule the exports"}},
+	}, `{"id":"s1","mode":"default","state":"waiting","seq":9,"pipeline":[`+
+		`{"stage":"shared_decisions","persona":"system_designer","gate":true,"policy":"human","status":"done","latest_version":1,"cost_usd":0},`+
+		`{"stage":"solution_design","slice":"SL2","persona":"system_designer","gate":true,"policy":"human","status":"waiting","attempt":1,"latest_version":1,"cost_usd":0}],`+
+		`"current":{"stage":"grounding","slice":"SL1","kind":"stage","persona":"senior_developer","model":"m",`+
+		`"started_at":"2026-10-18T09:00:00Z","turns":0,"tool_calls":0,"tokens":0},`+
+		`"open":{"prompt_id":"gate:solution_design:SL2:v1","kind":"gate"},`+
+		`"cost":{"spent_usd":0,"run_spent_usd":0,"cap_usd":0,"run_cap_usd":0,"priced":false},`+
+		`"artifacts":[{"stage":"solution_design","slice":"SL2","version":1,"created_at":"2026-10-18T09:00:00Z","status":"at_gate"}],`+
+		`"slices":[{"id":"SL1","title":"Export one report"},{"id":"SL2","title":"Schedule the exports"}]}`)
+
+	pinRoundTrip(t, BlueprintArtifact{Stage: "acceptance", Slice: "SL1", Version: 2, Body: "# Acceptance"},
+		`{"stage":"acceptance","slice":"SL1","version":2,"body":"# Acceptance"}`)
+
+	pinRoundTrip(t, LiveFrame{Type: "artifact_stored", Stage: "decomposition", Slice: "SL2", Version: 1},
+		`{"type":"artifact_stored","stage":"decomposition","slice":"SL2","version":1}`)
+
+	pinRoundTrip(t, LiveFrame{Type: "draft", Draft: &Draft{Stage: "solution_design", Slice: "SL2", Version: 1, Text: "# Design"}},
+		`{"type":"draft","draft":{"stage":"solution_design","slice":"SL2","version":1,"offset":0,"text":"# Design"}}`)
 }

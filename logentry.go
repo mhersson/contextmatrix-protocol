@@ -52,7 +52,8 @@ type LogPrompt struct {
 	// ID is opaque to consumers, for example a question number or a gate's
 	// stage and version. The blueprint gate bar finds the open prompt's
 	// actions by matching OpenPrompt.PromptID against it; nothing else
-	// matches on it.
+	// matches on it. A per-slice gate's ID carries the slice (the architect's
+	// form is gate:<stage>:<slice>:v<n>); consumers match by equality only.
 	ID string `json:"id,omitempty"`
 	// Kind is a display hint, "question", "gate" or "round". Consumers style by
 	// it, treat any other value as neutral, and never match on it.
@@ -90,7 +91,9 @@ type LogRound struct {
 	// Persona asks the round, for the block's header ("system designer").
 	Persona string `json:"persona"`
 	// Stage is the pack stage id that asks.
-	Stage     string          `json:"stage"`
+	Stage string `json:"stage"`
+	// Slice is the piece the stage runs for; "" for the whole blueprint.
+	Slice     string          `json:"slice,omitempty"`
 	Questions []RoundQuestion `json:"questions"`
 	// Assumptions, when set, is the round's last tab: each one accepted or
 	// turned into a question.
@@ -172,7 +175,9 @@ type RoundChat struct {
 }
 
 // LogMarker turns a blueprint transcript row into a stage divider or a
-// sheet reference; the frame's Content keeps a plain fallback line.
+// sheet reference; the frame's Content keeps a plain fallback line. A sheet
+// reference opens Stage at Version for Slice; a stage divider and a round
+// header name the slice when the blueprint has two or more.
 type LogMarker struct {
 	// Kind is "stage" (a stage divider, on a "system" frame) or "artifact"
 	// (a sheet reference that opens Stage at Version, on a "text" frame), so
@@ -180,6 +185,8 @@ type LogMarker struct {
 	// A consumer shows Content for any other Kind.
 	Kind  string `json:"kind"`
 	Stage string `json:"stage"`
+	// Slice is the piece the stage runs for; "" for the whole blueprint.
+	Slice string `json:"slice,omitempty"`
 	// Persona is who runs the stage, on a stage divider.
 	Persona string `json:"persona,omitempty"`
 	// Version is the artifact version a sheet reference opens.
