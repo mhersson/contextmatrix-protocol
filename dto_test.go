@@ -668,6 +668,14 @@ func TestLogEntryMarkerWireShape(t *testing.T) {
 				`"marker":{"kind":"artifact","stage":"acceptance","slice":"SL2","version":1,"note":"Drawn by senior developer"}}`,
 		},
 		{
+			name:    "a review",
+			typ:     "text",
+			content: "The reviewer scored Acceptance (SL2) version 3 4 of 5 (passes at 4), round 1.",
+			marker:  &LogMarker{Kind: "review", Stage: "acceptance", Slice: "SL2", Persona: "tester", Version: 3},
+			want: `{"ts":"2026-01-02T03:04:05Z","type":"text","content":"The reviewer scored Acceptance (SL2) version 3 4 of 5 (passes at 4), round 1.",` +
+				`"marker":{"kind":"review","stage":"acceptance","slice":"SL2","persona":"tester","version":3}}`,
+		},
+		{
 			name:    "absent",
 			typ:     "text",
 			content: "Design rev 2",
