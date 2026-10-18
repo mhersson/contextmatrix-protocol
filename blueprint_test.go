@@ -57,9 +57,9 @@ func TestBlueprintViewWireShape(t *testing.T) {
 		Artifacts: []ArtifactRef{{
 			Stage: "solution_design", Version: 1, CreatedAt: started, Status: "superseded",
 			DecidedAt: &decided, DecidedBy: "you",
-			Review: &ArtifactReview{Reviewer: "Senior developer", Score: 3, Threshold: 4, Findings: []ReviewFinding{
-				{Text: "No rollback plan", SentTo: 2, AddressedIn: 2, AddressedBy: "System designer", AddressedNote: "Added D4"},
-				{Text: "Naming", SentTo: 2},
+			Review: &ArtifactReview{Reviewer: "Senior developer", Score: 3, Threshold: 4, Round: 1, Findings: []ReviewFinding{
+				{ID: "R1", Severity: "critical", Text: "No rollback plan", Status: "open", SentTo: 2, AddressedIn: 2, AddressedBy: "System designer", AddressedNote: "Added D4"},
+				{ID: "R2", Severity: "minor", Text: "Naming", Status: "open", SentTo: 2},
 			}},
 		}},
 	}
@@ -74,9 +74,9 @@ func TestBlueprintViewWireShape(t *testing.T) {
 		`"cost":{"spent_usd":0.35,"run_spent_usd":0.12,"cap_usd":2,"run_cap_usd":0.5,"priced":true},` +
 		`"artifacts":[{"stage":"solution_design","version":1,"created_at":"2026-10-17T09:30:00Z","status":"superseded",` +
 		`"decided_at":"2026-10-17T09:45:00Z","decided_by":"you",` +
-		`"review":{"reviewer":"Senior developer","score":3,"threshold":4,"findings":[` +
-		`{"text":"No rollback plan","sent_to":2,"addressed_in":2,"addressed_by":"System designer","addressed_note":"Added D4"},` +
-		`{"text":"Naming","sent_to":2}]}}]}`
+		`"review":{"reviewer":"Senior developer","score":3,"threshold":4,"passed":false,"round":1,"findings":[` +
+		`{"id":"R1","severity":"critical","text":"No rollback plan","status":"open","sent_to":2,"addressed_in":2,"addressed_by":"System designer","addressed_note":"Added D4"},` +
+		`{"id":"R2","severity":"minor","text":"Naming","status":"open","sent_to":2}]}}]}`
 
 	pinRoundTrip(t, v, want)
 }
@@ -161,4 +161,21 @@ func TestLiveFrameWireShape(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) { pinRoundTrip(t, tt.in, tt.want) })
 	}
+}
+
+// A later round's review keeps each re-checked finding's id with its
+// verdict and the version it was verified in; passed stays on the wire when
+// false, and round is left out by a review that carries none.
+func TestArtifactReviewWireShape(t *testing.T) {
+	pinRoundTrip(t, ArtifactReview{Reviewer: "tester", Score: 4, Threshold: 4, Passed: true, Round: 2, Findings: []ReviewFinding{
+		{ID: "R1", Severity: "critical", Text: "AC2 cannot fail", Status: "fixed", VerifiedIn: 2},
+		{ID: "R2", Severity: "major", Text: "No criterion covers an empty input", Status: "still_open", VerifiedIn: 2, SentTo: 3},
+		{ID: "R3", Severity: "minor", Text: "Name the fixture", Status: "open", SentTo: 3},
+	}}, `{"reviewer":"tester","score":4,"threshold":4,"passed":true,"round":2,"findings":[`+
+		`{"id":"R1","severity":"critical","text":"AC2 cannot fail","status":"fixed","verified_in":2},`+
+		`{"id":"R2","severity":"major","text":"No criterion covers an empty input","status":"still_open","verified_in":2,"sent_to":3},`+
+		`{"id":"R3","severity":"minor","text":"Name the fixture","status":"open","sent_to":3}]}`)
+
+	pinRoundTrip(t, ArtifactReview{Reviewer: "tester", Score: 2, Threshold: 4, Findings: []ReviewFinding{}},
+		`{"reviewer":"tester","score":2,"threshold":4,"passed":false,"findings":[]}`)
 }
