@@ -10,8 +10,8 @@ import (
 // and the stored artifact versions. The architect serves it on
 // GET /blueprints/{id}, where the id is the chat session id, and in snapshot
 // LiveFrames; CM relays the bytes unchanged. The architect sends every list
-// in it (pipeline, artifacts, review findings) as [], never null; a consumer
-// still treats a missing or null list as empty.
+// in it (pipeline, artifacts, review findings, slices) as [], never null; a
+// consumer still treats a missing or null list as empty.
 type BlueprintView struct {
 	ID string `json:"id"`
 	// Mode is one of the ArchitectMode constants.
@@ -36,13 +36,30 @@ type BlueprintView struct {
 	Open      *OpenPrompt    `json:"open,omitempty"`
 	Cost      BlueprintCost  `json:"cost"`
 	Artifacts []ArtifactRef  `json:"artifacts"`
+	// Slices lists the pieces of the newest stored slicing version in slicing
+	// order; [] before slicing stores one. Consumers show slice tabs, the
+	// grouped scale bar and slice names only with two or more.
+	Slices []BlueprintSlice `json:"slices"`
+}
+
+// BlueprintSlice is one piece of the blueprint, in slicing order.
+type BlueprintSlice struct {
+	// ID is SL<n>, n from 1 in slicing order; consumers never parse it.
+	ID    string `json:"id"`
+	Title string `json:"title"`
 }
 
 // PipelineStep is one segment of the blueprint's scale bar, in pipeline
 // order.
 type PipelineStep struct {
 	// Stage is a pack stage id, "signoff" or "emission".
-	Stage   string `json:"stage"`
+	Stage string `json:"stage"`
+	// Slice is the piece a per-slice step belongs to; "" for a whole-blueprint
+	// step and for per-slice steps before slicing stores a version. After
+	// slicing, the four per-slice steps repeat once per slice, contiguous and in
+	// slicing order (design, grounding, acceptance, decomposition for SL1, then
+	// for SL2 ...).
+	Slice   string `json:"slice,omitempty"`
 	Persona string `json:"persona"`
 	Gate    bool   `json:"gate"`
 	// Policy is the gate's policy, "human" or "auto".
@@ -50,7 +67,8 @@ type PipelineStep struct {
 	// FoldsInto names the stage this one folds into, when the pack folds it.
 	FoldsInto string `json:"folds_into,omitempty"`
 	// Status is one of: pending, running, reviewing, revising, waiting, done,
-	// failed, folded, skipped.
+	// failed, folded, skipped. A collapsed stage (shared_decisions on a
+	// one-slice blueprint: recorded, never run) is skipped.
 	Status string `json:"status"`
 	// Attempt is the attempt number of the step's newest stage run, from 1;
 	// 0 until the stage first runs, and for signoff and emission. A fresh run
@@ -77,6 +95,8 @@ type PipelineStep struct {
 // CurrentRun is the run in flight and its progress so far.
 type CurrentRun struct {
 	Stage string `json:"stage"`
+	// Slice is the piece this belongs to; "" for the whole blueprint.
+	Slice string `json:"slice,omitempty"`
 	// Kind is "stage", "reviewer" or "responder".
 	Kind      string    `json:"kind"`
 	Persona   string    `json:"persona"`
@@ -93,8 +113,8 @@ type CurrentRun struct {
 // OpenPrompt is the question or gate waiting for the operator.
 type OpenPrompt struct {
 	// PromptID equals the LogPrompt ID of the prompt's transcript row, for
-	// example Q<n>, round:<n>, gate:<stage>:v<n>, gate:signoff:v<n> or
-	// emission:v<n>.
+	// example Q<n>, round:<n>, gate:<stage>:v<n>, gate:<stage>:<slice>:v<n> for a
+	// per-slice gate, gate:signoff:v<n> or emission:v<n>.
 	// Consumers match it by equality and never parse it.
 	PromptID string `json:"prompt_id"`
 	// Kind is "question", "gate" or "round".
@@ -120,7 +140,9 @@ type BlueprintCost struct {
 
 // ArtifactRef indexes one stored artifact version in a BlueprintView.
 type ArtifactRef struct {
-	Stage     string    `json:"stage"`
+	Stage string `json:"stage"`
+	// Slice is the piece this belongs to; "" for the whole blueprint.
+	Slice     string    `json:"slice,omitempty"`
 	Version   int       `json:"version"`
 	CreatedAt time.Time `json:"created_at"`
 	// Status is one of: current, reviewing, at_gate, approved, rejected,
@@ -181,12 +203,14 @@ type ReviewFinding struct {
 }
 
 // BlueprintArtifact is one stored artifact version, served on
-// GET /blueprints/{id}/artifacts/{stage}/{version}. Stage "signoff" and
-// stage "emission" (version 1) are pseudo-artifacts: Data is the sign-off
-// event payload, or for emission the created cards, the playbook, compare
-// URLs and total cost.
+// GET /blueprints/{id}/artifacts/{stage}/{version}, with ?slice=SL<n> for a
+// per-slice stage's. Stage "signoff" and stage "emission" (version 1) are
+// pseudo-artifacts: Data is the sign-off event payload, or for emission the
+// created cards, the playbook, compare URLs and total cost.
 type BlueprintArtifact struct {
-	Stage   string `json:"stage"`
+	Stage string `json:"stage"`
+	// Slice is the piece this belongs to; "" for the whole blueprint.
+	Slice   string `json:"slice,omitempty"`
 	Version int    `json:"version"`
 	Body    string `json:"body"`
 	// Data is the stage's structured payload; its shape is per stage and
@@ -201,20 +225,25 @@ type BlueprintArtifact struct {
 // SSE stream. The first frame on every connection is a snapshot.
 type LiveFrame struct {
 	// Type is "snapshot" (View plus the current Draft in full at offset 0),
-	// "artifact_stored" (Stage at Version is stored; fetch it) or "draft"
-	// (the next Draft fragment). A snapshot without Draft means no draft is
-	// in progress, so the consumer drops any held draft. A consumer ignores a
-	// frame of any other Type.
-	Type    string         `json:"type"`
-	View    *BlueprintView `json:"view,omitempty"`
-	Draft   *Draft         `json:"draft,omitempty"`
-	Stage   string         `json:"stage,omitempty"`
-	Version int            `json:"version,omitempty"`
+	// "artifact_stored" (Stage at Version, for Slice, is stored; fetch it) or
+	// "draft" (the next Draft fragment). A snapshot without Draft means no
+	// draft is in progress, so the consumer drops any held draft. A consumer
+	// ignores a frame of any other Type.
+	Type  string         `json:"type"`
+	View  *BlueprintView `json:"view,omitempty"`
+	Draft *Draft         `json:"draft,omitempty"`
+	Stage string         `json:"stage,omitempty"`
+	// Slice is the piece this belongs to; "" for the whole blueprint. Set on
+	// artifact_stored frames, with Stage and Version.
+	Slice   string `json:"slice,omitempty"`
+	Version int    `json:"version,omitempty"`
 }
 
 // Draft is the artifact text a run is writing, before it is stored.
 type Draft struct {
-	Stage   string `json:"stage"`
+	Stage string `json:"stage"`
+	// Slice is the piece this belongs to; "" for the whole blueprint.
+	Slice   string `json:"slice,omitempty"`
 	Version int    `json:"version"`
 	// Offset is how many Unicode code points (Go runes, not bytes or UTF-16
 	// units; in JS, Array.from(text).length) were sent before Text. Offset 0

@@ -660,6 +660,14 @@ func TestLogEntryMarkerWireShape(t *testing.T) {
 				`"marker":{"kind":"artifact","stage":"solution_design","version":2,"note":"Revised for the 3 findings"}}`,
 		},
 		{
+			name:    "a slice's sheet reference",
+			typ:     "text",
+			content: "Acceptance (SL2) rev 1: drawn by senior developer",
+			marker:  &LogMarker{Kind: "artifact", Stage: "acceptance", Slice: "SL2", Version: 1, Note: "Drawn by senior developer"},
+			want: `{"ts":"2026-01-02T03:04:05Z","type":"text","content":"Acceptance (SL2) rev 1: drawn by senior developer",` +
+				`"marker":{"kind":"artifact","stage":"acceptance","slice":"SL2","version":1,"note":"Drawn by senior developer"}}`,
+		},
+		{
 			name:    "absent",
 			typ:     "text",
 			content: "Design rev 2",
@@ -929,6 +937,15 @@ func TestLogPromptRoundWireShape(t *testing.T) {
 			}},
 			want: `{"id":"round:1","kind":"round","round":{"persona":"product owner","stage":"intake",` +
 				`"questions":[{"number":1,"title":"Scope","text":"Which users?","options":[]}]}}`,
+		},
+		{
+			name: "a slice's round",
+			in: LogPrompt{ID: "round:4", Kind: "round", Round: &LogRound{
+				Persona: "system designer", Stage: "solution_design", Slice: "SL2",
+				Questions: []RoundQuestion{{Number: 9, Title: "Format", Text: "CSV or JSON?", Options: []RoundOption{}}},
+			}},
+			want: `{"id":"round:4","kind":"round","round":{"persona":"system designer","stage":"solution_design","slice":"SL2",` +
+				`"questions":[{"number":9,"title":"Format","text":"CSV or JSON?","options":[]}]}}`,
 		},
 	}
 
