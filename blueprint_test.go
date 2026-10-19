@@ -241,3 +241,18 @@ func TestBlueprintViewEndedWireShape(t *testing.T) {
 		`{"stage":"signoff","persona":"","gate":true,"policy":"human","status":"not_reached","cost_usd":0}],`+
 		`"cost":{"spent_usd":0,"run_spent_usd":0,"cap_usd":0,"run_cap_usd":0,"priced":false},"artifacts":[],"slices":[]}`)
 }
+
+// A plain-language view says so and keeps the technical end reason apart.
+// TestBlueprintZeroValuesStayOnTheWire and TestBlueprintViewEndedWireShape
+// stay as they are: both fields go when empty.
+func TestBlueprintViewPlainLanguageWireShape(t *testing.T) {
+	pinRoundTrip(t, BlueprintView{
+		ID: "s1", Mode: ArchitectModeDefault, PlainLanguage: true, State: "ended",
+		EndReason: "the architect could not settle part of the design on its own",
+		EndDetail: "readiness still found problems after 3 rounds", Seq: 9,
+		Pipeline: []PipelineStep{}, Artifacts: []ArtifactRef{}, Slices: []BlueprintSlice{},
+	}, `{"id":"s1","mode":"default","plain_language":true,"state":"ended",`+
+		`"end_reason":"the architect could not settle part of the design on its own",`+
+		`"end_detail":"readiness still found problems after 3 rounds","seq":9,"pipeline":[],`+
+		`"cost":{"spent_usd":0,"run_spent_usd":0,"cap_usd":0,"run_cap_usd":0,"priced":false},"artifacts":[],"slices":[]}`)
+}

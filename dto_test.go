@@ -646,6 +646,18 @@ func TestLogEntryPromptWireShape(t *testing.T) {
 				`{"label":"Reject","reply":"reject","feedback":true}]}}`,
 		},
 		{
+			name: "a plain prompt with its technical detail",
+			prompt: &LogPrompt{
+				ID: "gate:signoff:v3", Kind: "gate", Text: "The architect could not settle part of the design on its own.",
+				Detail:  "X2 (critical): DEC2 keeps field order but D3 sorts keys.",
+				Actions: []LogAction{{Label: "Continue anyway", Reply: "approve"}, {Label: "Stop", Reply: "reject"}},
+			},
+			want: `{"ts":"2026-01-02T03:04:05Z","type":"text","content":"Pick one.",` +
+				`"prompt":{"id":"gate:signoff:v3","kind":"gate","text":"The architect could not settle part of the design on its own.",` +
+				`"detail":"X2 (critical): DEC2 keeps field order but D3 sorts keys.",` +
+				`"actions":[{"label":"Continue anyway","reply":"approve"},{"label":"Stop","reply":"reject"}]}}`,
+		},
+		{
 			name: "absent",
 			want: `{"ts":"2026-01-02T03:04:05Z","type":"text","content":"Pick one."}`,
 		},
@@ -999,6 +1011,19 @@ func TestLogPromptRoundWireShape(t *testing.T) {
 			}},
 			want: `{"id":"round:4","kind":"round","round":{"persona":"system designer","stage":"solution_design","slice":"SL2",` +
 				`"questions":[{"number":9,"title":"Format","text":"CSV or JSON?","options":[]}]}}`,
+		},
+		{
+			name: "a plain round's consequence with its technical detail",
+			in: LogPrompt{ID: "round:3", Kind: "round", Round: &LogRound{
+				Persona: "product owner", Stage: "intake", Questions: []RoundQuestion{},
+				Assumptions: []RoundAssumption{{
+					ID: "A1", Text: "Both phones see changes within seconds, but adding items needs internet.",
+					Detail: "Items sync through a hosted database; the app keeps no offline copy.",
+				}},
+			}},
+			want: `{"id":"round:3","kind":"round","round":{"persona":"product owner","stage":"intake","questions":[],` +
+				`"assumptions":[{"id":"A1","text":"Both phones see changes within seconds, but adding items needs internet.",` +
+				`"detail":"Items sync through a hosted database; the app keeps no offline copy."}]}}`,
 		},
 	}
 

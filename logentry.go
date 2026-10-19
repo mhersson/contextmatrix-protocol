@@ -62,6 +62,10 @@ type LogPrompt struct {
 	// consumer that renders the actions as the answers. Empty means render the
 	// frame's Content, which stays the full fallback message.
 	Text string `json:"text,omitempty"`
+	// Detail is the technical text on a plain-language prompt, where Text and
+	// the action labels are plain words; consumers fold it under Text. Omitted
+	// when empty.
+	Detail string `json:"detail,omitempty"`
 	// FreeText means any typed reply answers the prompt, not only an action's.
 	FreeText bool        `json:"free_text,omitempty"`
 	Actions  []LogAction `json:"actions,omitempty"`
@@ -154,6 +158,10 @@ type RoundSource struct {
 type RoundAssumption struct {
 	ID   string `json:"id"` // A<n>
 	Text string `json:"text"`
+	// Detail is the technical decision behind Text on a plain-language round,
+	// where Text is the plain consequence; consumers fold it under Text.
+	// Omitted when empty.
+	Detail string `json:"detail,omitempty"`
 }
 
 // RoundAnswer is one question's stored answer.

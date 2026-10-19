@@ -16,6 +16,9 @@ type BlueprintView struct {
 	ID string `json:"id"`
 	// Mode is one of the ArchitectMode constants.
 	Mode string `json:"mode"`
+	// PlainLanguage means the blueprint runs in plain language; the pane shows
+	// it. Omitted when false.
+	PlainLanguage bool `json:"plain_language,omitempty"`
 	// State is the architect's coarse lifecycle state: new (no need stated
 	// yet), running (a run is in flight), waiting (a question, gate or
 	// sign-off waits for the operator), idle (nothing runs; the next message
@@ -34,6 +37,10 @@ type BlueprintView struct {
 	// "readiness still found problems after 3 rounds". Set only when State is
 	// ended.
 	EndReason string `json:"end_reason,omitempty"`
+	// EndDetail holds the technical reason on a plain-language blueprint,
+	// where EndReason is plain; consumers fold it under EndReason. Omitted
+	// when empty.
+	EndDetail string `json:"end_detail,omitempty"`
 	// Seq is the id of the newest architect events row the view reflects, so
 	// it keeps rising across architect restarts. A consumer always applies a
 	// snapshot LiveFrame and applies a fetched view only when its Seq is at
