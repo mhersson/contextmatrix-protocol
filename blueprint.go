@@ -170,8 +170,15 @@ type ArtifactReview struct {
 	Score     int    `json:"score"`
 	Threshold int    `json:"threshold"`
 	// Passed is the reviewer's verdict under the pack's rule: score at or
-	// above Threshold and no open critical finding.
+	// above Threshold and no open critical finding. A verdict can be Passed
+	// and SentBack at once (it passed, but an open major finding sent it back).
 	Passed bool `json:"passed"`
+	// SentBack is true when this verdict sent the artifact back for a revision
+	// in the same attempt: a later version answers it, or the architect is
+	// about to draw one. False on a verdict that went to the gate (it settled,
+	// or it was the attempt's last round), and on views from architects before
+	// v0.31.0.
+	SentBack bool `json:"sent_back,omitempty"`
 	// Round is the reviewer round within the stage attempt, 1-based.
 	Round int `json:"round,omitempty"`
 	// MaxRounds is the most reviewer rounds the stage's attempt runs (the

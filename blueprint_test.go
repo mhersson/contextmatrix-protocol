@@ -168,14 +168,14 @@ func TestLiveFrameWireShape(t *testing.T) {
 // false, and round is left out by a review that carries none.
 func TestArtifactReviewWireShape(t *testing.T) {
 	pinRoundTrip(t, ArtifactReview{
-		Reviewer: "tester", Score: 4, Threshold: 4, Passed: true, Round: 2, MaxRounds: 3,
+		Reviewer: "tester", Score: 4, Threshold: 4, Passed: true, SentBack: true, Round: 2, MaxRounds: 3,
 		Summary: "Read the criteria against the design.",
 		Findings: []ReviewFinding{
 			{ID: "R1", Severity: "critical", Text: "AC2 cannot fail", Status: "fixed", VerifiedIn: 2},
 			{ID: "R2", Severity: "major", Text: "No criterion covers an empty input", Status: "still_open", VerifiedIn: 2, ReviewerNote: "AC4 still skips it", SentTo: 3},
 			{ID: "R3", Severity: "minor", Text: "Name the fixture", Status: "open", SentTo: 3},
 		},
-	}, `{"reviewer":"tester","score":4,"threshold":4,"passed":true,"round":2,"max_rounds":3,`+
+	}, `{"reviewer":"tester","score":4,"threshold":4,"passed":true,"sent_back":true,"round":2,"max_rounds":3,`+
 		`"summary":"Read the criteria against the design.","findings":[`+
 		`{"id":"R1","severity":"critical","text":"AC2 cannot fail","status":"fixed","verified_in":2},`+
 		`{"id":"R2","severity":"major","text":"No criterion covers an empty input","status":"still_open","verified_in":2,"reviewer_note":"AC4 still skips it","sent_to":3},`+
@@ -183,6 +183,9 @@ func TestArtifactReviewWireShape(t *testing.T) {
 
 	pinRoundTrip(t, ArtifactReview{Reviewer: "tester", Score: 2, Threshold: 4, Findings: []ReviewFinding{}},
 		`{"reviewer":"tester","score":2,"threshold":4,"passed":false,"findings":[]}`)
+
+	pinRoundTrip(t, ArtifactReview{Reviewer: "tester", Score: 3, Threshold: 4, SentBack: true, Findings: []ReviewFinding{}},
+		`{"reviewer":"tester","score":3,"threshold":4,"passed":false,"sent_back":true,"findings":[]}`)
 }
 
 // A per-slice step, run, artifact, frame and draft carry their slice; a
