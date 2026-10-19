@@ -1096,3 +1096,62 @@ func TestMessagePayloadRoundWireShape(t *testing.T) {
 		})
 	}
 }
+
+// Pins a mockup reply and its action values. TestMessagePayloadWireShape stays
+// byte-identical, which proves a message without a mockup is unchanged.
+func TestMessagePayloadMockupWireShape(t *testing.T) {
+	tests := []struct {
+		name string
+		in   MessagePayload
+		want string
+	}{
+		{
+			name: "use",
+			in: MessagePayload{SessionID: "s1", Content: "Use this design", MessageID: "m1", Mockup: &MockupReply{
+				PromptID: "mockup:1", Revision: 2, Action: MockupUse,
+				Settings: map[string]string{"layout": "cards", "group": "on"},
+			}},
+			want: `{"session_id":"s1","content":"Use this design","message_id":"m1",` +
+				`"mockup":{"prompt_id":"mockup:1","revision":2,"action":"use","settings":{"group":"on","layout":"cards"}}}`,
+		},
+		{
+			name: "skip omits settings",
+			in: MessagePayload{SessionID: "s1", Content: "Skip mockups", Mockup: &MockupReply{
+				PromptID: "mockup:1", Revision: 2, Action: MockupSkip,
+			}},
+			want: `{"session_id":"s1","content":"Skip mockups",` +
+				`"mockup":{"prompt_id":"mockup:1","revision":2,"action":"skip"}}`,
+		},
+		{
+			name: "chat",
+			in: MessagePayload{SessionID: "s1", Content: "Make the rows taller", Mockup: &MockupReply{
+				PromptID: "mockup:1", Revision: 1, Action: MockupChat,
+				Settings: map[string]string{"layout": "rows"},
+			}},
+			want: `{"session_id":"s1","content":"Make the rows taller",` +
+				`"mockup":{"prompt_id":"mockup:1","revision":1,"action":"chat","settings":{"layout":"rows"}}}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b, err := json.Marshal(tt.in)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if string(b) != tt.want {
+				t.Errorf("wire drift:\n got %s\nwant %s", b, tt.want)
+			}
+
+			var out MessagePayload
+			if err := json.Unmarshal([]byte(tt.want), &out); err != nil {
+				t.Fatal(err)
+			}
+
+			if !reflect.DeepEqual(tt.in, out) {
+				t.Errorf("round-trip mismatch:\n got %+v\nwant %+v", out, tt.in)
+			}
+		})
+	}
+}

@@ -108,6 +108,10 @@ type MessagePayload struct {
 	// Round carries a question round's answers; Content keeps a readable
 	// summary for the transcript. Nil on every other message.
 	Round *RoundReply `json:"round,omitempty"`
+	// Mockup carries a reply to the mockup waiting for the person. Content is
+	// the typed message on MockupChat and a readable summary otherwise. Nil
+	// otherwise.
+	Mockup *MockupReply `json:"mockup,omitempty"`
 }
 
 // RoundReply is a question round's answers and assumption decisions. A plain
@@ -120,6 +124,27 @@ type RoundReply struct {
 	// Final is "Submit all"; false is "Send N now, answer the rest later".
 	Final bool `json:"final,omitempty"`
 }
+
+// MockupReply is the person's action on the mockup the architect shows.
+type MockupReply struct {
+	// PromptID echoes the view's open prompt id (mockup:<n>); opaque.
+	PromptID string `json:"prompt_id"`
+	// Revision is the revision the person looked at: its artifact version.
+	Revision int `json:"revision"`
+	// Action is MockupUse, MockupSkip or MockupChat.
+	Action string `json:"action"`
+	// Settings maps a suggestion id to its value: on use every suggestion of
+	// that revision, on chat the person's current settings when known; never
+	// on skip.
+	Settings map[string]string `json:"settings,omitempty"`
+}
+
+// MockupReply actions.
+const (
+	MockupUse  = "use"
+	MockupSkip = "skip"
+	MockupChat = "chat"
+)
 
 // PromotePayload is sent by ContextMatrix to switch a running interactive
 // session to fully autonomous mode.

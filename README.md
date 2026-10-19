@@ -26,7 +26,7 @@ index points at the file that owns each part:
 
 | File            | Contract                                                                              |
 | --------------- | ------------------------------------------------------------------------------------- |
-| `task.go`       | CM→backend task lifecycle: trigger, kill, stop-all, message (and the structured answers a question-round reply carries), promote, end-session. |
+| `task.go`       | CM→backend task lifecycle: trigger, kill, stop-all, message (and the structured answers a question-round reply carries, or the action, revision and settings of a mockup reply), promote, end-session. |
 | `callback.go`   | Backend→CM callback body: status.                                                     |
 | `selection.go`  | Model-selection inputs shipped to the agent backend: candidates (prices, priors, creator), favorites, blacklist, per-role tier bars, and the best-value price headroom. |
 | `selection/`    | The selector: tier ladders per role, descent, price band, best value, favorites, panel seats, reachability. Pure functions over the types in `selection.go`. |
