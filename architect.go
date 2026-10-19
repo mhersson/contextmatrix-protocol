@@ -37,9 +37,10 @@ type ResearchStart struct {
 	APIKey   string `json:"api_key"`
 }
 
-// Architect modes, chosen when a blueprint session is created. Default stops
-// at every human gate the pack declares; auto answers them itself and stops
-// before emission; auto+emit also emits; yolo emits and starts the run.
+// Architect modes; a blueprint starts in the mode chosen when its session is
+// created. Default stops at every human gate the pack declares; auto answers
+// them itself and stops before emission; auto+emit also emits; yolo emits and
+// starts the run.
 const (
 	ArchitectModeDefault  = "default"
 	ArchitectModeAuto     = "auto"
