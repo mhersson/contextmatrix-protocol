@@ -1,13 +1,18 @@
 package protocol
 
 // ArchitectStart carries what a blueprint session needs beyond the chat
-// fields: the target projects, the autonomy mode, the cost cap, the price and
-// the context window of the session's model. CM sets it only on starts to an
+// fields: the target projects, the autonomy mode, whether the blueprint runs
+// in plain language, the cost cap, the price and the context window of the
+// session's model, and the research setting. CM sets it only on starts to an
 // architect-kind backend; chat backends never see it.
 type ArchitectStart struct {
-	Projects   []string `json:"projects"`
-	Mode       string   `json:"mode"`
-	CostCapUSD float64  `json:"cost_cap_usd,omitempty"`
+	Projects []string `json:"projects"`
+	Mode     string   `json:"mode"`
+	// PlainLanguage is set from the new-blueprint dialog; the architect stores
+	// it at creation and, like Mode, never takes it from a later start.
+	// Omitted when false, so an older consumer renders today's behaviour.
+	PlainLanguage bool    `json:"plain_language,omitempty"`
+	CostCapUSD    float64 `json:"cost_cap_usd,omitempty"`
 	// Price is the per-token price CM resolved for Model, with the cache
 	// rates already resolved. Nil when CM has no price for the model; the
 	// architect then cannot bind a cost cap and must refuse a capped run.

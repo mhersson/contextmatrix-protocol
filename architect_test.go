@@ -143,3 +143,27 @@ func TestArchitectStartContextWindowWireShape(t *testing.T) {
 		t.Errorf("round trip lost the window: %+v", back)
 	}
 }
+
+// A plain-language blueprint says so on every start; a start without it stays
+// byte-identical (TestArchitectStartZeroCostCapOmitted).
+func TestArchitectStartPlainLanguageWireShape(t *testing.T) {
+	in := ArchitectStart{Projects: []string{"alpha"}, Mode: ArchitectModeDefault, PlainLanguage: true}
+
+	b, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if want := `{"projects":["alpha"],"mode":"default","plain_language":true}`; string(b) != want {
+		t.Errorf("got %s want %s", b, want)
+	}
+
+	var back ArchitectStart
+	if err := json.Unmarshal(b, &back); err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(in, back) {
+		t.Errorf("round trip: got %+v want %+v", back, in)
+	}
+}

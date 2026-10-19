@@ -33,8 +33,8 @@ type ChatStartPayload struct {
 	// a start without it - there is no local fallback.
 	GitCredentialsToken string `json:"git_credentials_token,omitempty"`
 	// Architect is set only when the receiving backend is of kind architect:
-	// the blueprint's target projects, mode and cost cap. The session id is
-	// the blueprint id. Chat backends never receive it.
+	// the blueprint's start settings (see ArchitectStart). The session id is the
+	// blueprint id. Chat backends never receive it.
 	Architect *ArchitectStart `json:"architect,omitempty"`
 }
 
