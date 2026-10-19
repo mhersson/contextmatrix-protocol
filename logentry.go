@@ -179,19 +179,22 @@ type RoundChat struct {
 }
 
 // LogMarker turns a blueprint transcript row into a stage divider, a sheet
-// reference or a review; the frame's Content keeps a plain fallback line. A
-// sheet reference opens Stage at Version for Slice; a review renders the
-// view's review of Stage at Version for Slice; a stage divider and a round
-// header name the slice when the blueprint has two or more. Rows stored
-// before v0.30.0 carry no review marker and stay text.
+// reference, a review or a decision; the frame's Content keeps a plain
+// fallback line. A sheet reference opens Stage at Version for Slice; a review
+// renders the view's review of Stage at Version for Slice; a stage divider and
+// a round header name the slice when the blueprint has two or more. Rows
+// stored before v0.30.0 carry no review marker and stay text.
 type LogMarker struct {
 	// Kind is "stage" (a stage divider, on a "system" frame), "artifact" (a
-	// sheet reference that opens Stage at Version, on a "text" frame) or
+	// sheet reference that opens Stage at Version, on a "text" frame),
 	// "review" (a reviewer's verdict on Stage at Version for Slice, on a
-	// "text" frame, rendered from the view's review for that version), so a
-	// consumer without marker support shows the fallback as a fitting row.
-	// A consumer shows Content for any other Kind, and for a review whose
-	// version the view does not hold.
+	// "text" frame, rendered from the view's review for that version) or
+	// "decision" (the architect decided the open prompt at Stage and Version
+	// itself, without a reply, on a "system" frame; a consumer treats it as
+	// the answer to the last unanswered prompt before it), so a consumer
+	// without marker support shows the fallback as a fitting row. A consumer
+	// shows Content for any other Kind, and for a review whose version the
+	// view does not hold.
 	Kind  string `json:"kind"`
 	Stage string `json:"stage"`
 	// Slice is the piece the stage runs for; "" for the whole blueprint.
