@@ -601,6 +601,17 @@ func TestLogEntryPromptWireShape(t *testing.T) {
 				`"actions":[{"label":"Postgres","reply":"1","recommended":true},{"label":"SQLite","reply":"2"}]}}`,
 		},
 		{
+			name: "a feedback box with its own label",
+			prompt: &LogPrompt{ID: "gate:signoff:v2", Kind: "gate", Actions: []LogAction{
+				{Label: "Approve over critical findings", Reply: "approve", Feedback: true, Ask: "Why approve over the critical findings?"},
+				{Label: "Reject", Reply: "reject", Feedback: true},
+			}},
+			want: `{"ts":"2026-01-02T03:04:05Z","type":"text","content":"Pick one.",` +
+				`"prompt":{"id":"gate:signoff:v2","kind":"gate","actions":[` +
+				`{"label":"Approve over critical findings","reply":"approve","feedback":true,"ask":"Why approve over the critical findings?"},` +
+				`{"label":"Reject","reply":"reject","feedback":true}]}}`,
+		},
+		{
 			name: "absent",
 			want: `{"ts":"2026-01-02T03:04:05Z","type":"text","content":"Pick one."}`,
 		},

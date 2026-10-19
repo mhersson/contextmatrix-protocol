@@ -20,12 +20,20 @@ type BlueprintView struct {
 	// yet), running (a run is in flight), waiting (a question, gate or
 	// sign-off waits for the operator), idle (nothing runs; the next message
 	// decides what follows), failed (a run or step failed; the next message
-	// retries it), emitting (the approved cards are being created), emitted
-	// (the cards exist; the watch may still report on them) or done (the
-	// watch posted its closing summary). Consumers may branch on it for
-	// display, but step statuses and Open carry the detail. New states may be
-	// added, so render an unknown State neutrally.
+	// retries it), ended (the pipeline stopped before the sign-off: a stage's
+	// result left nothing to build on, or the readiness rounds ran out;
+	// nothing more runs and EndReason says why), emitting (the approved cards
+	// are being created), emitted (the cards exist; the watch may still
+	// report on them) or done (the watch posted its closing summary).
+	// Consumers may branch on it for display, but step statuses and Open
+	// carry the detail. New states may be added, so render an unknown State
+	// neutrally.
 	State string `json:"state"`
+	// EndReason says in one plain line why the pipeline ended, for example
+	// "the cards still failed their contract checks after three submits" or
+	// "readiness still found problems after 3 rounds". Set only when State is
+	// ended.
+	EndReason string `json:"end_reason,omitempty"`
 	// Seq is the id of the newest architect events row the view reflects, so
 	// it keeps rising across architect restarts. A consumer always applies a
 	// snapshot LiveFrame and applies a fetched view only when its Seq is at
@@ -68,8 +76,12 @@ type PipelineStep struct {
 	// FoldsInto names the stage this one folds into, when the pack folds it.
 	FoldsInto string `json:"folds_into,omitempty"`
 	// Status is one of: pending, running, reviewing, revising, waiting, done,
-	// failed, folded, skipped. A collapsed stage (shared_decisions on a
-	// one-slice blueprint: recorded, never run) is skipped.
+	// failed, folded, skipped, stopped, not_reached. A collapsed stage
+	// (shared_decisions on a one-slice blueprint: recorded, never run) is
+	// skipped. On an ended blueprint the step whose result ended the pipeline
+	// is stopped and every step after it that never ran is not_reached
+	// (signoff and emission included); a not_reached step has no run and no
+	// artifact behind it.
 	Status string `json:"status"`
 	// Attempt is the attempt number of the step's newest stage run, from 1;
 	// 0 until the stage first runs, and for signoff and emission. A fresh run
