@@ -223,3 +223,21 @@ func TestBlueprintSlicesWireShape(t *testing.T) {
 	pinRoundTrip(t, LiveFrame{Type: "draft", Draft: &Draft{Stage: "solution_design", Slice: "SL2", Version: 1, Text: "# Design"}},
 		`{"type":"draft","draft":{"stage":"solution_design","slice":"SL2","version":1,"offset":0,"text":"# Design"}}`)
 }
+
+// An ended blueprint says why, and its scale bar names the step that
+// stopped it and the steps it never reached. A view that has not ended
+// carries no reason: TestBlueprintZeroValuesStayOnTheWire stays as it is.
+func TestBlueprintViewEndedWireShape(t *testing.T) {
+	pinRoundTrip(t, BlueprintView{
+		ID: "s1", Mode: ArchitectModeDefault, State: "ended",
+		EndReason: "readiness still found problems after 3 rounds", Seq: 9,
+		Pipeline: []PipelineStep{
+			{Stage: "readiness", Persona: "Reviewer", Status: "stopped", Round: 3, MaxRounds: 3, LatestVersion: 3},
+			{Stage: "signoff", Gate: true, Policy: "human", Status: "not_reached"},
+		},
+		Artifacts: []ArtifactRef{}, Slices: []BlueprintSlice{},
+	}, `{"id":"s1","mode":"default","state":"ended","end_reason":"readiness still found problems after 3 rounds","seq":9,"pipeline":[`+
+		`{"stage":"readiness","persona":"Reviewer","gate":false,"status":"stopped","round":3,"max_rounds":3,"latest_version":3,"cost_usd":0},`+
+		`{"stage":"signoff","persona":"","gate":true,"policy":"human","status":"not_reached","cost_usd":0}],`+
+		`"cost":{"spent_usd":0,"run_spent_usd":0,"cap_usd":0,"run_cap_usd":0,"priced":false},"artifacts":[],"slices":[]}`)
+}

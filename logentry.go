@@ -80,6 +80,10 @@ type LogAction struct {
 	Reply string `json:"reply"`
 	// Feedback asks for text first and sends Reply, a space, then the text.
 	Feedback bool `json:"feedback,omitempty"`
+	// Ask labels the text box a Feedback action opens, for example "Why
+	// approve over the critical findings?". Empty means the consumer's own
+	// label.
+	Ask string `json:"ask,omitempty"`
 	// Recommended marks the producer's suggested answer. The label carries no
 	// "(recommended)" suffix; consumers render the hint themselves.
 	Recommended bool `json:"recommended,omitempty"`
