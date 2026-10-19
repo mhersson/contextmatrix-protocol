@@ -381,6 +381,40 @@ func TestTriggerPayloadMaxCapabilityWireShape(t *testing.T) {
 	}
 }
 
+// Pins the project POC flag: set marshals to poc and round-trips, false is
+// absent from the wire so an older backend sees nothing.
+func TestTriggerPayloadPOCWireShape(t *testing.T) {
+	p := TriggerPayload{CardID: "CM-001", Project: "alpha", RepoURL: "https://x/r.git", POC: true}
+
+	b, err := json.Marshal(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := `{"card_id":"CM-001","project":"alpha","repo_url":"https://x/r.git","poc":true}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+
+	var got TriggerPayload
+	if err := json.Unmarshal(b, &got); err != nil {
+		t.Fatal(err)
+	}
+
+	if !got.POC {
+		t.Errorf("POC must round-trip, got %+v", got)
+	}
+
+	b, err = json.Marshal(TriggerPayload{CardID: "CM-001", Project: "alpha", RepoURL: "https://x/r.git"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if strings.Contains(string(b), "poc") {
+		t.Errorf("false POC must be omitted, got %s", b)
+	}
+}
+
 // Pins the optional verify gate on trigger: absent marshals to nothing and
 // decodes to nil, so pre-verify-gate consumers see identical bytes.
 func TestTriggerPayloadVerifyWireShape(t *testing.T) {

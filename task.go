@@ -40,6 +40,11 @@ type TriggerPayload struct {
 	// Verify is the resolved card-over-project verify config for this run.
 	// Nil = nothing declared; the agent falls back to its own detection.
 	Verify *VerifyConfig `json:"verify,omitempty"`
+	// POC marks a run of a card in a proof-of-concept project, copied by CM
+	// from the project config at launch. The agent backend runs one generic
+	// reviewer and asks for main-behaviour tests only; a card with mob review
+	// keeps its full review. False/absent = the full production workflow.
+	POC bool `json:"poc,omitempty"`
 	// GitToken is a short-lived token for cloning/pushing the project repo,
 	// minted by CM from the project's credential binding (or the instance
 	// credential when unbound). The agent backend fail-closes without it: the
