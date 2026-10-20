@@ -164,6 +164,25 @@ func TestErrorCodesAreStable(t *testing.T) {
 	}
 }
 
+func TestChangeKindsAreStable(t *testing.T) {
+	if ChangeKindFeat != "feat" || ChangeKindFix != "fix" || ChangeKindChange != "change" {
+		t.Error("change kind constants changed - this breaks CM's About popup")
+	}
+}
+
+// CM shows "version unknown" exactly when Build is nil, so a body from a backend
+// older than these fields must decode to nil, not to an empty BuildInfo.
+func TestHealthResponseDecodesLegacyBody(t *testing.T) {
+	var hr HealthResponse
+	if err := json.Unmarshal([]byte(`{"ok":true,"running_containers":1,"max_concurrent":4}`), &hr); err != nil {
+		t.Fatalf("legacy health body broke decode: %v", err)
+	}
+
+	if hr.Build != nil || hr.WorkerImageRevision != "" {
+		t.Errorf("legacy body must leave build nil and revision empty, got %+v", hr)
+	}
+}
+
 func TestChatStartResponseWireShape(t *testing.T) {
 	b, err := json.Marshal(ChatStartResponse{OK: true, ContainerID: "abc"})
 	if err != nil {
@@ -937,6 +956,35 @@ func TestLifecycleAndResponseDTOsWireShape(t *testing.T) {
 			"HealthResponse full",
 			HealthResponse{OK: true, RunningContainers: 3, MaxConcurrent: 8},
 			`{"ok":true,"running_containers":3,"max_concurrent":8}`,
+		},
+		{"BuildInfo zero", BuildInfo{}, `{"changes":null}`},
+		{"BuildInfo no history", BuildInfo{Changes: []Change{}}, `{"changes":[]}`},
+		{"Change zero", Change{}, `{"number":0,"kind":"","title":"","merged_at":""}`},
+		{
+			"HealthResponse with build",
+			HealthResponse{
+				OK: true, RunningContainers: 1, MaxConcurrent: 4,
+				Build: &BuildInfo{
+					Version:   "v1.2.0",
+					Commit:    "0123456789abcdef0123456789abcdef01234567",
+					BuildTime: "2026-10-21T10:00:00Z",
+					Changes: []Change{{
+						Number: 26, Kind: ChangeKindFeat,
+						Title: "retain a per-key backlog", MergedAt: "2026-10-17T14:04:32Z",
+					}},
+				},
+				WorkerImageRevision: "fedcba9876543210fedcba9876543210fedcba98",
+			},
+			`{"ok":true,"running_containers":1,"max_concurrent":4,"build":{"version":"v1.2.0",` +
+				`"commit":"0123456789abcdef0123456789abcdef01234567","build_time":"2026-10-21T10:00:00Z",` +
+				`"changes":[{"number":26,"kind":"feat","title":"retain a per-key backlog",` +
+				`"merged_at":"2026-10-17T14:04:32Z"}]},` +
+				`"worker_image_revision":"fedcba9876543210fedcba9876543210fedcba98"}`,
+		},
+		{
+			"HealthResponse unstamped build",
+			HealthResponse{OK: true, Build: &BuildInfo{Changes: []Change{}}},
+			`{"ok":true,"running_containers":0,"max_concurrent":0,"build":{"changes":[]}}`,
 		},
 	}
 

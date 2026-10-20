@@ -38,5 +38,5 @@ index points at the file that owns each part:
 | `taskskills.go` | Task-skills repo pointer served by CM to the backends: clone URL, ref, and a short-lived clone token. |
 | `verify.go`     | Operator-declared verify gate (command, timeout, env allowlist), carried by the trigger payload. |
 | `codes.go`      | Stable `ErrorResponse.Code` constants - branch on these, not on `Message`.            |
-| `response.go`   | Webhook response bodies: success/error, container list, stop-all, health, image list. |
+| `response.go`   | Webhook response bodies: success/error, container list, stop-all, health (the build's version, commit, build time and recent changes, and the default worker image's revision), image list. |
 | `hmac.go`       | HMAC-SHA256 signing/verification, header names, and clock-skew windows.               |

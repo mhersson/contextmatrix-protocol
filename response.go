@@ -68,12 +68,61 @@ type StopAllResponse struct {
 
 // HealthResponse is the body returned by GET /health. RunningContainers and
 // MaxConcurrent give operators a one-glance snapshot of saturation without
-// having to call /containers.
+// having to call /containers. Build and WorkerImageRevision tell CM which
+// build the backend runs and which revision its default worker image holds.
 type HealthResponse struct {
 	OK                bool `json:"ok"`
 	RunningContainers int  `json:"running_containers"`
 	MaxConcurrent     int  `json:"max_concurrent"`
+
+	// Build is nil from a backend that predates it; CM reads that as
+	// "version unknown".
+	Build *BuildInfo `json:"build,omitempty"`
+
+	// WorkerImageRevision is the org.opencontainers.image.revision label of
+	// the backend's default worker image. Agent and chat only; "" = unknown.
+	WorkerImageRevision string `json:"worker_image_revision,omitempty"`
 }
+
+// BuildInfo describes the build a component runs.
+type BuildInfo struct {
+	// Version is the exact tag the build was made on, else "".
+	Version string `json:"version,omitempty"`
+
+	// Commit is the full 40-char sha; "" marks an unstamped build.
+	Commit string `json:"commit,omitempty"`
+
+	// BuildTime is RFC 3339 UTC, "" when not stamped.
+	BuildTime string `json:"build_time,omitempty"`
+
+	// Changes is newest first and holds at most changelog.Limit entries. It is
+	// never null from a current producer: [] means no history was recorded
+	// (a shallow clone or a bare go build).
+	Changes []Change `json:"changes"`
+}
+
+// Change is one merged pull request in a build's history.
+type Change struct {
+	Number int `json:"number"`
+
+	// Kind is ChangeKindFeat, ChangeKindFix or ChangeKindChange.
+	Kind string `json:"kind"`
+
+	// Title is the PR title without its "type(scope): " prefix.
+	Title string `json:"title"`
+
+	// MergedAt is the merge commit's committer date in UTC RFC 3339, so string
+	// order is merge order; "" when git's date did not parse.
+	MergedAt string `json:"merged_at"`
+}
+
+// Change kinds. A PR title with no conventional type prefix, or a type other
+// than feat or fix, is ChangeKindChange.
+const (
+	ChangeKindFeat   = "feat"
+	ChangeKindFix    = "fix"
+	ChangeKindChange = "change"
+)
 
 // ImageListItem is one entry in a ListImagesResponse. Tags carries only the
 // repo tags that matched the backend's image_list_filters - an image with no
