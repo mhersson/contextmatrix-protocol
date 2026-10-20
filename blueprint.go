@@ -20,7 +20,7 @@ type BlueprintView struct {
 	// it. Omitted when false.
 	PlainLanguage bool `json:"plain_language,omitempty"`
 	// State is the architect's coarse lifecycle state: new (no need stated
-	// yet), running (a run is in flight), waiting (a question, gate or
+	// yet), running (a run is in flight), waiting (a question, gate, mockup or
 	// sign-off waits for the operator), idle (nothing runs; the next message
 	// decides what follows), failed (a run or step failed; the next message
 	// retries it), ended (the pipeline stopped before the sign-off: a stage's
@@ -130,14 +130,17 @@ type CurrentRun struct {
 	Tokens int64 `json:"tokens"`
 }
 
-// OpenPrompt is the question or gate waiting for the operator.
+// OpenPrompt is the question, gate or mockup waiting for the operator.
 type OpenPrompt struct {
 	// PromptID equals the LogPrompt ID of the prompt's transcript row, for
 	// example Q<n>, round:<n>, gate:<stage>:v<n>, gate:<stage>:<slice>:v<n> for a
-	// per-slice gate, gate:signoff:v<n> or emission:v<n>.
+	// per-slice gate, gate:signoff:v<n>, emission:v<n> or mockup:offer. A
+	// mockup's mockup:<n> matches no LogPrompt and stays the same across its
+	// revisions.
 	// Consumers match it by equality and never parse it.
 	PromptID string `json:"prompt_id"`
-	// Kind is "question", "gate" or "round".
+	// Kind is "question", "gate", "round" or "mockup". The mockup offer is a
+	// "gate"; "mockup" is the mockup waiting for the operator.
 	Kind string `json:"kind"`
 }
 

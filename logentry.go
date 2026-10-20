@@ -54,6 +54,8 @@ type LogPrompt struct {
 	// actions by matching OpenPrompt.PromptID against it; nothing else
 	// matches on it. A per-slice gate's ID carries the slice (the architect's
 	// form is gate:<stage>:<slice>:v<n>); consumers match by equality only.
+	// The mockup offer's ID is mockup:offer, a "gate"; a mockup waiting for the
+	// operator (mockup:<n>) has no LogPrompt.
 	ID string `json:"id,omitempty"`
 	// Kind is a display hint, "question", "gate" or "round". Consumers style by
 	// it, treat any other value as neutral, and never match on it.
