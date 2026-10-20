@@ -116,8 +116,8 @@ type Change struct {
 	MergedAt string `json:"merged_at"`
 }
 
-// Change kinds. A PR title with no conventional type prefix, or a type other
-// than feat or fix, is ChangeKindChange.
+// Change kinds. A PR title with no conventional type prefix, or with a perf or
+// revert type, is ChangeKindChange.
 const (
 	ChangeKindFeat   = "feat"
 	ChangeKindFix    = "fix"

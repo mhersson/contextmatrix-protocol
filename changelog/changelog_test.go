@@ -305,7 +305,12 @@ func TestGitHelperIgnoresInheritedGitEnv(t *testing.T) {
 	git(t, outer, nil, "init", "-q")
 	t.Setenv("GIT_DIR", filepath.Join(outer, ".git"))
 
-	inner := t.TempDir()
+	// git resolves symlinks (macOS /var -> /private/var), so compare resolved paths.
+	inner, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	git(t, inner, nil, "init", "-q")
 
 	got := strings.TrimSpace(string(git(t, inner, nil, "rev-parse", "--absolute-git-dir")))
