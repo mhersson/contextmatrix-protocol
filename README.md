@@ -2,7 +2,8 @@
 
 The CM↔backend wire contract: webhook DTOs, HMAC signing/verification,
 stable error codes. Imported by contextmatrix,
-contextmatrix-agent, contextmatrix-chat, and contextmatrix-backendkit.
+contextmatrix-agent, contextmatrix-chat, contextmatrix-architect, and
+contextmatrix-backendkit.
 
 - **Stdlib only.** No dependencies, ever.
 - **Two packages with logic.** `selection/` is the deterministic reading of
@@ -17,8 +18,8 @@ contextmatrix-agent, contextmatrix-chat, and contextmatrix-backendkit.
   tolerate unknown fields.
 - **Versioning:** additive change = minor bump. A field may be retired only
   after every importer (contextmatrix, contextmatrix-agent, contextmatrix-chat,
-  contextmatrix-backendkit) has dropped it; the retiring commit is marked `!`
-  and ships as a minor bump.
+  contextmatrix-architect, contextmatrix-backendkit) has dropped it; the
+  retiring commit is marked `!` and ships as a minor bump.
 
 ## Where the contract lives
 

@@ -2,8 +2,9 @@
 
 The CM↔backend wire contract: webhook DTOs, HMAC signing/verification, stable
 error codes. Imported as a Go module by **contextmatrix**,
-**contextmatrix-agent**, **contextmatrix-chat**, and **contextmatrix-backendkit** -
-a change here ripples to all four, so treat every edit as a public API change.
+**contextmatrix-agent**, **contextmatrix-chat**, **contextmatrix-architect**, and
+**contextmatrix-backendkit** - a change here ripples to all five, so treat every
+edit as a public API change.
 
 Single flat `package protocol` at the module root. `README.md` is the
 file-by-file contract index; read it before editing a specific DTO.
@@ -31,8 +32,8 @@ file-by-file contract index; read it before editing a specific DTO.
   tag breaks every consumer; removal follows the retirement rule below.
 - **Versioning:** additive change = minor bump. A field may be retired only
   after every importer (contextmatrix, contextmatrix-agent, contextmatrix-chat,
-  contextmatrix-backendkit) has dropped it; the retiring commit is marked `!`
-  and ships as a minor bump.
+  contextmatrix-architect, contextmatrix-backendkit) has dropped it; the
+  retiring commit is marked `!` and ships as a minor bump.
 - **Secrets stay out of logs.** `LLMEndpoint.APIKey`, `GitToken`, `MCPAPIKey`,
   `GitCredentialsToken`, `GuestSpec.Token`, `TaskSkillsSource.Token`, and `ResearchStart.APIKey` are
   secrets. Never log them.
