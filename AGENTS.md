@@ -20,8 +20,8 @@ file-by-file contract index; read it before editing a specific DTO.
   candidates plus a per-role ladder to picks, so CM's preview and the agent's
   real selection are the same code. `changelog/` is the reference reading of a
   build's merge history: the `git log` arguments every component's build runs
-  and a pure parse of their output into `[]protocol.Change`, so all four
-  components filter their history by one rule. Each package's scope is exactly
+  and a pure parse of their output into `[]protocol.Change`, so CM, the agent,
+  chat and the architect filter their history by one rule. Each package's scope is exactly
   that. No logging, no I/O (the build runs git, not `changelog/`), no run-time
   state, no types from any other module. If a change needs one of those it
   belongs in the consumer, and if the line erodes the package moves to its own
@@ -87,7 +87,8 @@ make fmt && make test && make test-race && make lint && make build
 
 CI enforces these on every pull request. The wire-pin tests are the safety
 net, the selection package tests cover its determinism, and the changelog
-tests pin every parse rule against real `git log` output.
+tests pin every parse rule, with real `git log` runs proving `GitLogArgs` and
+`Parse` agree.
 
 The pin tests (`dto_test.go`, `architect_test.go`, `blueprint_test.go`,
 `taskskills_test.go`, `selection_test.go`, `hmac_test.go`) marshal each DTO and
