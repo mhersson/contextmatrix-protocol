@@ -5,11 +5,14 @@ stable error codes. Imported by contextmatrix,
 contextmatrix-agent, contextmatrix-chat, and contextmatrix-backendkit.
 
 - **Stdlib only.** No dependencies, ever.
-- **One package with logic.** `selection/` is the deterministic reading of
+- **Two packages with logic.** `selection/` is the deterministic reading of
   the selection wire types: given candidates, favorites, blacklist and a
   per-role tier ladder, which model a role and tier resolve to. Both CM and
-  the agent import it so a preview and a real pick cannot disagree. It holds
-  pure functions only - no logging, no I/O, no run-time state.
+  the agent import it so a preview and a real pick cannot disagree.
+  `changelog/` is the reading of a build's merge history: the `git log`
+  arguments every component's build runs, and the parser that turns their
+  output into the change list `/health` reports. Both hold pure functions
+  only - no logging, no I/O, no run-time state.
 - **Forward-compatible by discipline:** new fields are `omitempty`, decoders
   tolerate unknown fields.
 - **Versioning:** additive change = minor bump. A field may be retired only
@@ -39,4 +42,5 @@ index points at the file that owns each part:
 | `verify.go`     | Operator-declared verify gate (command, timeout, env allowlist), carried by the trigger payload. |
 | `codes.go`      | Stable `ErrorResponse.Code` constants - branch on these, not on `Message`.            |
 | `response.go`   | Webhook response bodies: success/error, container list, stop-all, health (the build's version, commit, build time and recent changes, and the default worker image's revision), image list. |
+| `changelog/`    | The build's change list: the git arguments every build runs (`GitLogArgs`), the 20-entry limit, and `Parse`, which keeps merged PRs newest first with merge dates in UTC and drops Dependabot and the ci, docs, chore, build, test, refactor and style types. |
 | `hmac.go`       | HMAC-SHA256 signing/verification, header names, and clock-skew windows.               |
