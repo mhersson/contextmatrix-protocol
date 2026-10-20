@@ -3,8 +3,10 @@ package changelog
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -28,6 +30,10 @@ func subj(n int) string {
 
 func ch(n int, kind, title, mergedAt string) protocol.Change {
 	return protocol.Change{Number: n, Kind: kind, Title: title, MergedAt: mergedAt}
+}
+
+func committedAt(date string) []string {
+	return []string{"GIT_COMMITTER_DATE=" + date}
 }
 
 func TestParse(t *testing.T) {
@@ -133,6 +139,11 @@ func TestParse(t *testing.T) {
 			rec(d, "Merge pull request #99999999999999999999 from o/b", "feat: x"), Limit, none,
 		},
 		{
+			"huge limit means no cap",
+			rec(d, subj(7), "feat: x"), math.MaxInt,
+			[]protocol.Change{ch(7, feat, "x", du)},
+		},
+		{
 			"surrounding whitespace ignored",
 			"\n\n" + rec(d, subj(7), "feat: x") + "  \n", Limit,
 			[]protocol.Change{ch(7, feat, "x", du)},
@@ -190,7 +201,7 @@ func TestGitLogArgs_ParseRealHistory(t *testing.T) {
 		return git(t, dir, env, args...)
 	}
 
-	at := func(date string) []string { return []string{"GIT_COMMITTER_DATE=" + date} }
+	at := committedAt
 
 	run(nil, "init", "-q", "-b", "main")
 	run(nil, "commit", "-q", "--allow-empty", "-m", "init")
@@ -202,6 +213,8 @@ func TestGitLogArgs_ParseRealHistory(t *testing.T) {
 		"-m", "Merge pull request #1 from o/feat/x", "-m", "feat(x): add x", "feat/x")
 
 	run(nil, "commit", "-q", "--allow-empty", "-m", "fix: direct commit")
+	// Only --merges keeps this merge-shaped direct commit out.
+	run(nil, "commit", "-q", "--allow-empty", "-m", "Merge pull request #4 from o/direct", "-m", "feat: direct")
 
 	run(nil, "switch", "-q", "-c", "dependabot/go_modules/y")
 	run(nil, "commit", "-q", "--allow-empty", "-m", "bump y")
@@ -231,6 +244,62 @@ func TestGitLogArgs_ParseRealHistory(t *testing.T) {
 	}
 }
 
+// GitHub signs every merge commit, so a developer's log.showSignature=true would
+// otherwise print verification output into the date field of every record.
+func TestGitLogArgs_IgnoreShowSignature(t *testing.T) {
+	for _, bin := range []string{"git", "ssh-keygen"} {
+		if _, err := exec.LookPath(bin); err != nil {
+			t.Skip(bin + " not on PATH")
+		}
+	}
+
+	key := filepath.Join(t.TempDir(), "signing-key")
+
+	keygen := exec.CommandContext(t.Context(), "ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", key)
+	if out, err := keygen.CombinedOutput(); err != nil {
+		t.Fatalf("ssh-keygen: %v\n%s", err, out)
+	}
+
+	dir := t.TempDir()
+
+	git(t, dir, nil, "init", "-q", "-b", "main")
+	git(t, dir, nil, "commit", "-q", "--allow-empty", "-m", "init")
+	git(t, dir, nil, "switch", "-q", "-c", "feat/x")
+	git(t, dir, nil, "commit", "-q", "--allow-empty", "-m", "x")
+	git(t, dir, nil, "switch", "-q", "main")
+	git(t, dir, committedAt("2026-10-01T12:00:00+02:00"),
+		"-c", "gpg.format=ssh", "-c", "user.signingKey="+key,
+		"merge", "-q", "--no-ff", "-S", "-m", "Merge pull request #1 from o/feat/x", "-m", "feat(x): add x", "feat/x")
+
+	showSignature := []string{"GIT_CONFIG_COUNT=1", "GIT_CONFIG_KEY_0=log.showSignature", "GIT_CONFIG_VALUE_0=true"}
+	got := Parse(git(t, dir, showSignature, GitLogArgs...), Limit)
+
+	want := []protocol.Change{ch(1, protocol.ChangeKindFeat, "add x", "2026-10-01T10:00:00Z")}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Parse with log.showSignature=true:\n got %#v\nwant %#v", got, want)
+	}
+}
+
+// A git hook exports GIT_DIR; the helper must not let these tests commit into
+// the developer's own repository.
+func TestGitHelperIgnoresInheritedGitEnv(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not on PATH")
+	}
+
+	outer := t.TempDir()
+	git(t, outer, nil, "init", "-q")
+	t.Setenv("GIT_DIR", filepath.Join(outer, ".git"))
+
+	inner := t.TempDir()
+	git(t, inner, nil, "init", "-q")
+
+	got := strings.TrimSpace(string(git(t, inner, nil, "rev-parse", "--absolute-git-dir")))
+	if want := filepath.Join(inner, ".git"); got != want {
+		t.Errorf("git ran against %s, want %s", got, want)
+	}
+}
+
 // git runs git in dir with no global or system config, so the developer's own
 // settings cannot change the output under test.
 func git(t *testing.T, dir string, env []string, args ...string) []byte {
@@ -239,7 +308,13 @@ func git(t *testing.T, dir string, env []string, args ...string) []byte {
 	cmd := exec.CommandContext(t.Context(), "git", args...) //nolint:gosec // G204: test drives git with fixed arguments
 	cmd.Dir = dir
 
-	cmd.Env = append(os.Environ(),
+	for _, kv := range os.Environ() {
+		if !strings.HasPrefix(kv, "GIT_") {
+			cmd.Env = append(cmd.Env, kv)
+		}
+	}
+
+	cmd.Env = append(cmd.Env,
 		"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1",
 		"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@example.com",
 		"GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@example.com")

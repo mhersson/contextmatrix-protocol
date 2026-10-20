@@ -34,7 +34,8 @@ var noiseTypes = map[string]bool{
 
 // Parse turns GitLogArgs output into at most limit changes, newest first.
 func Parse(raw []byte, limit int) []protocol.Change {
-	out := make([]protocol.Change, 0, max(limit, 0))
+	// The capacity hint is capped: a caller may pass a huge limit to mean "all".
+	out := make([]protocol.Change, 0, min(max(limit, 0), Limit))
 	if limit <= 0 {
 		return out
 	}
