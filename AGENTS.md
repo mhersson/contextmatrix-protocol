@@ -2,8 +2,9 @@
 
 The CM↔backend wire contract: webhook DTOs, HMAC signing/verification, stable
 error codes. Imported as a Go module by **contextmatrix**,
-**contextmatrix-agent**, **contextmatrix-chat**, and **contextmatrix-backendkit** -
-a change here ripples to all four, so treat every edit as a public API change.
+**contextmatrix-agent**, **contextmatrix-chat**, **contextmatrix-architect**, and
+**contextmatrix-backendkit** - a change here ripples to all five, so treat every
+edit as a public API change.
 
 Single flat `package protocol` at the module root. `README.md` is the
 file-by-file contract index; read it before editing a specific DTO.
@@ -15,19 +16,24 @@ file-by-file contract index; read it before editing a specific DTO.
 - **DTOs are pure data - no business logic, no value validation.** Which worker
   statuses are valid, which models are allowed, which transitions are legal all
   live on the CM/backend side. This package pins field *shapes*, nothing more.
-- **The one exception is `selection/`.** It is the reference interpretation of
-  the selection DTOs: pure functions from candidates plus a per-role ladder to
-  picks, so CM's preview and the agent's real selection are the same code.
-  Its scope is exactly that. No logging, no I/O, no run-time state, no types
-  from any other module. If a change needs one of those it belongs in the
-  consumer, and if the line erodes the package moves to its own module.
+- **The two exceptions are `selection/` and `changelog/`.** `selection/` is the
+  reference interpretation of the selection DTOs: pure functions from
+  candidates plus a per-role ladder to picks, so CM's preview and the agent's
+  real selection are the same code. `changelog/` is the reference reading of a
+  build's merge history: the `git log` arguments every component's build runs
+  and a pure parse of their output into `[]protocol.Change`, so CM, the agent,
+  chat and the architect filter their history by one rule. Each package's scope is exactly
+  that. No logging, no I/O (the build runs git, not `changelog/`), no run-time
+  state, no types from any other module. If a change needs one of those it
+  belongs in the consumer, and if the line erodes the package moves to its own
+  module.
 - **Never break the wire shape.** Additive change only: new fields are
   `omitempty`, decoders tolerate unknown fields. Renaming a field or changing a JSON
   tag breaks every consumer; removal follows the retirement rule below.
 - **Versioning:** additive change = minor bump. A field may be retired only
   after every importer (contextmatrix, contextmatrix-agent, contextmatrix-chat,
-  contextmatrix-backendkit) has dropped it; the retiring commit is marked `!`
-  and ships as a minor bump.
+  contextmatrix-architect, contextmatrix-backendkit) has dropped it; the
+  retiring commit is marked `!` and ships as a minor bump.
 - **Secrets stay out of logs.** `LLMEndpoint.APIKey`, `GitToken`, `MCPAPIKey`,
   `GitCredentialsToken`, `GuestSpec.Token`, `TaskSkillsSource.Token`, and `ResearchStart.APIKey` are
   secrets. Never log them.
@@ -81,7 +87,9 @@ make fmt && make test && make test-race && make lint && make build
 ```
 
 CI enforces these on every pull request. The wire-pin tests are the safety
-net, and the selection package tests cover its determinism.
+net, the selection package tests cover its determinism, and the changelog
+tests pin every parse rule, with real `git log` runs proving `GitLogArgs` and
+`Parse` agree.
 
 The pin tests (`dto_test.go`, `architect_test.go`, `blueprint_test.go`,
 `taskskills_test.go`, `selection_test.go`, `hmac_test.go`) marshal each DTO and

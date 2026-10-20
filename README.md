@@ -2,20 +2,24 @@
 
 The CM↔backend wire contract: webhook DTOs, HMAC signing/verification,
 stable error codes. Imported by contextmatrix,
-contextmatrix-agent, contextmatrix-chat, and contextmatrix-backendkit.
+contextmatrix-agent, contextmatrix-chat, contextmatrix-architect, and
+contextmatrix-backendkit.
 
 - **Stdlib only.** No dependencies, ever.
-- **One package with logic.** `selection/` is the deterministic reading of
+- **Two packages with logic.** `selection/` is the deterministic reading of
   the selection wire types: given candidates, favorites, blacklist and a
   per-role tier ladder, which model a role and tier resolve to. Both CM and
-  the agent import it so a preview and a real pick cannot disagree. It holds
-  pure functions only - no logging, no I/O, no run-time state.
+  the agent import it so a preview and a real pick cannot disagree.
+  `changelog/` is the reading of a build's merge history: the `git log`
+  arguments every component's build runs, and the parser that turns their
+  output into the change list `/health` reports. Both hold pure functions
+  only - no logging, no I/O, no run-time state.
 - **Forward-compatible by discipline:** new fields are `omitempty`, decoders
   tolerate unknown fields.
 - **Versioning:** additive change = minor bump. A field may be retired only
   after every importer (contextmatrix, contextmatrix-agent, contextmatrix-chat,
-  contextmatrix-backendkit) has dropped it; the retiring commit is marked `!`
-  and ships as a minor bump.
+  contextmatrix-architect, contextmatrix-backendkit) has dropped it; the
+  retiring commit is marked `!` and ships as a minor bump.
 
 ## Where the contract lives
 
@@ -38,5 +42,6 @@ index points at the file that owns each part:
 | `taskskills.go` | Task-skills repo pointer served by CM to the backends: clone URL, ref, and a short-lived clone token. |
 | `verify.go`     | Operator-declared verify gate (command, timeout, env allowlist), carried by the trigger payload. |
 | `codes.go`      | Stable `ErrorResponse.Code` constants - branch on these, not on `Message`.            |
-| `response.go`   | Webhook response bodies: success/error, container list, stop-all, health, image list. |
+| `response.go`   | Webhook response bodies: success/error, container list, stop-all, health (the build's version, commit, build time and recent changes, and the default worker image's revision), image list. |
+| `changelog/`    | The build's change list: the git arguments every build runs (`GitLogArgs`), the 20-entry limit, and `Parse`, which keeps merged PRs newest first with merge dates in UTC and drops Dependabot and the ci, docs, chore, build, test, refactor and style types. |
 | `hmac.go`       | HMAC-SHA256 signing/verification, header names, and clock-skew windows.               |
