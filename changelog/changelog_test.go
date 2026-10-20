@@ -67,14 +67,24 @@ func TestParse(t *testing.T) {
 			[]protocol.Change{ch(7, feat, "drop the legacy field", du)},
 		},
 		{
-			"type is case-insensitive",
+			"capitalized prefix is a card title",
 			rec(d, subj(7), "Fix: handle empty input"), Limit,
-			[]protocol.Change{ch(7, fix, "handle empty input", du)},
+			[]protocol.Change{ch(7, change, "Fix: handle empty input", du)},
 		},
 		{
-			"other type is change",
+			"perf type is change",
 			rec(d, subj(7), "perf(hub): faster fan-out"), Limit,
 			[]protocol.Change{ch(7, change, "faster fan-out", du)},
+		},
+		{
+			"revert type is change",
+			rec(d, subj(7), "revert: undo the popup"), Limit,
+			[]protocol.Change{ch(7, change, "undo the popup", du)},
+		},
+		{
+			"unknown prefix is a card title",
+			rec(d, subj(7), "pr_gates: Copilot gate is skipped"), Limit,
+			[]protocol.Change{ch(7, change, "pr_gates: Copilot gate is skipped", du)},
 		},
 		{
 			"noise types skipped",
@@ -84,7 +94,11 @@ func TestParse(t *testing.T) {
 			Limit,
 			[]protocol.Change{ch(8, feat, "kept", du)},
 		},
-		{"noise type case-insensitive", rec(d, subj(7), "Chore: tidy"), Limit, none},
+		{
+			"capitalized noise prefix is a card title",
+			rec(d, subj(7), "Chore: tidy"), Limit,
+			[]protocol.Change{ch(7, change, "Chore: tidy", du)},
+		},
 		{
 			"unprefixed card title",
 			rec(d, subj(7), "Show the About popup"), Limit,

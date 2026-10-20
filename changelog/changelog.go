@@ -26,10 +26,13 @@ var (
 	typedTitle   = regexp.MustCompile(`^(\w+)(\([^)]*\))?!?:\s*(.+)$`)
 )
 
-// noiseTypes are conventional-commit types that never reach users.
-var noiseTypes = map[string]bool{
-	"ci": true, "docs": true, "chore": true, "build": true,
-	"test": true, "refactor": true, "style": true,
+// conventionalTypes maps each lowercase conventional type to its kind; "" marks
+// a type that never reaches users. Any other "word:" prefix, capitalized ones
+// included, is part of a card title.
+var conventionalTypes = map[string]string{
+	"feat": protocol.ChangeKindFeat, "fix": protocol.ChangeKindFix,
+	"perf": protocol.ChangeKindChange, "revert": protocol.ChangeKindChange,
+	"ci": "", "docs": "", "chore": "", "build": "", "test": "", "refactor": "", "style": "",
 }
 
 // Parse turns GitLogArgs output into at most limit changes, newest first.
@@ -79,19 +82,13 @@ func parseRecord(record string) (protocol.Change, bool) {
 	kind := protocol.ChangeKindChange
 
 	if t := typedTitle.FindStringSubmatch(title); t != nil {
-		typ := strings.ToLower(t[1])
-		if noiseTypes[typ] {
-			return protocol.Change{}, false
-		}
+		if k, ok := conventionalTypes[t[1]]; ok {
+			if k == "" {
+				return protocol.Change{}, false
+			}
 
-		switch typ {
-		case "feat":
-			kind = protocol.ChangeKindFeat
-		case "fix":
-			kind = protocol.ChangeKindFix
+			kind, title = k, t[3]
 		}
-
-		title = t[3]
 	}
 
 	return protocol.Change{
