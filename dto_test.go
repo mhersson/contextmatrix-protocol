@@ -341,6 +341,57 @@ func TestLogEntryWireShape(t *testing.T) {
 	}
 }
 
+func TestLogTokenUsageCostWireShape(t *testing.T) {
+	// A tiny OpenRouter-sized figure keeps its digits.
+	u := LogTokenUsage{InputTokens: 1, OutputTokens: 2, CacheReadTokens: 3, CacheCreateTokens: 4, CostUSD: 0.000123}
+
+	b, err := json.Marshal(u)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := `{"input_tokens":1,"output_tokens":2,"cache_read_tokens":3,"cache_creation_tokens":4,"cost_usd":0.000123}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+
+	// No reported cost: byte-identical to the shape before the field existed.
+	u.CostUSD = 0
+
+	b, err = json.Marshal(u)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want = `{"input_tokens":1,"output_tokens":2,"cache_read_tokens":3,"cache_creation_tokens":4}`
+	if string(b) != want {
+		t.Errorf("omitempty drift:\n got %s\nwant %s", b, want)
+	}
+}
+
+func TestLogTokenUsageCostDecode(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want float64
+	}{
+		{"legacy frame without cost", `{"input_tokens":1,"output_tokens":2,"cache_read_tokens":3,"cache_creation_tokens":4}`, 0},
+		{"frame with cost", `{"input_tokens":1,"output_tokens":2,"cache_read_tokens":3,"cache_creation_tokens":4,"cost_usd":0.000123}`, 0.000123},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var u LogTokenUsage
+			if err := json.Unmarshal([]byte(tc.in), &u); err != nil {
+				t.Fatal(err)
+			}
+
+			if u.CostUSD != tc.want {
+				t.Errorf("CostUSD = %v, want %v", u.CostUSD, tc.want)
+			}
+		})
+	}
+}
+
 func TestTriggerPayloadBestOfNWireShape(t *testing.T) {
 	p := TriggerPayload{CardID: "CM-001", Project: "alpha", RepoURL: "https://x/r.git", BestOfN: 3}
 
