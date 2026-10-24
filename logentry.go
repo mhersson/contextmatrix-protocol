@@ -219,13 +219,17 @@ type LogMarker struct {
 	Note string `json:"note,omitempty"`
 }
 
-// LogTokenUsage carries per-turn token accounting on "usage"-type frames.
-// Per-turn, NOT cumulative session totals. InputTokens + CacheReadTokens +
-// CacheCreateTokens approximates the prompt size the model actually
-// processed; consumers typically display that sum as "context used".
+// LogTokenUsage carries one model call's token accounting and gateway cost on
+// "usage"-type frames. Per model call, NOT cumulative session totals.
+// InputTokens + CacheReadTokens + CacheCreateTokens approximates the prompt
+// size the model actually processed; consumers typically display that sum as
+// "context used".
 type LogTokenUsage struct {
 	InputTokens       int64 `json:"input_tokens"`
 	OutputTokens      int64 `json:"output_tokens"`
 	CacheReadTokens   int64 `json:"cache_read_tokens"`
 	CacheCreateTokens int64 `json:"cache_creation_tokens"`
+	// CostUSD is the USD cost the gateway reported for this call, never
+	// negative; 0, and absent from the wire, when the gateway reported none.
+	CostUSD float64 `json:"cost_usd,omitempty"`
 }
