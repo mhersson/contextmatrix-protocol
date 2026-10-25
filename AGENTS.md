@@ -6,8 +6,9 @@ error codes. Imported as a Go module by **contextmatrix**,
 **contextmatrix-backendkit** - a change here ripples to all five, so treat every
 edit as a public API change.
 
-Single flat `package protocol` at the module root. `README.md` is the
-file-by-file contract index; read it before editing a specific DTO.
+The root `package protocol` holds the DTOs, with the `selection/` and
+`changelog/` subpackages beside it. `README.md` is the file-by-file contract
+index; read it before editing a specific DTO.
 
 ## Boundary discipline
 
@@ -16,20 +17,30 @@ file-by-file contract index; read it before editing a specific DTO.
 - **DTOs are pure data - no business logic, no value validation.** Which worker
   statuses are valid, which models are allowed, which transitions are legal all
   live on the CM/backend side. This package pins field *shapes*, nothing more.
-- **The two exceptions are `selection/` and `changelog/`.** `selection/` is the
-  reference interpretation of the selection DTOs: pure functions from
+- **A closed wire vocabulary may ship one membership check.** When CM and a
+  backend must accept the same set, its constants may come with one membership
+  function (today only `ValidArchitectMode`). Membership only: no
+  normalisation, defaults or policy.
+- **The two package exceptions are `selection/` and `changelog/`.** `selection/`
+  is the reference interpretation of the selection DTOs: pure functions from
   candidates plus a per-role ladder to picks, so CM's preview and the agent's
   real selection are the same code. `changelog/` is the reference reading of a
   build's merge history: the `git log` arguments every component's build runs
   and a pure parse of their output into `[]protocol.Change`, so CM, the agent,
-  chat and the architect filter their history by one rule. Each package's scope is exactly
-  that. No logging, no I/O (the build runs git, not `changelog/`), no run-time
-  state, no types from any other module. If a change needs one of those it
-  belongs in the consumer, and if the line erodes the package moves to its own
-  module.
+  chat and the architect filter their history by one rule. Each package's scope
+  is exactly that. No logging, no I/O (the build runs git, not `changelog/`), no
+  run-time state, no types from any other module. If a change needs one of those
+  it belongs in the consumer, and if the line erodes the package moves to its
+  own module.
 - **Never break the wire shape.** Additive change only: new fields are
-  `omitempty`, decoders tolerate unknown fields. Renaming a field or changing a JSON
-  tag breaks every consumer; removal follows the retirement rule below.
+  `omitempty`, decoders tolerate unknown fields. The exception is a field whose
+  zero value means something to the consumer: it carries no `omitempty`, and
+  consumers read a missing or null list as empty. Examples are the blueprint
+  view's lists (`pipeline`, `artifacts`, `slices`, a review's `findings`), its
+  cost fields (`cap_usd` 0 = no cap, `priced` false = unpriced), a step's
+  `cost_usd`, and `BuildInfo.Changes`. `TestBlueprintZeroValuesStayOnTheWire`
+  holds the blueprint shape. Renaming a field or changing a JSON tag breaks
+  every consumer; removal follows the retirement rule below.
 - **Versioning:** additive change = minor bump. A field may be retired only
   after every importer (contextmatrix, contextmatrix-agent, contextmatrix-chat,
   contextmatrix-architect, contextmatrix-backendkit) has dropped it; the
@@ -43,8 +54,9 @@ file-by-file contract index; read it before editing a specific DTO.
 - Every DTO carries a doc comment; document each non-obvious field inline with its
   wire semantics and back-compat story (see `chat.go` for the pattern). These
   are the wire contract and stay despite the comment rule below.
-- New optional field → `omitempty`. Use a pointer (`*T`) when the consumer must
-  distinguish "absent/legacy" from "present but zero".
+- New optional field → `omitempty`, unless its zero value means something
+  (see above). Use a pointer (`*T`) when the consumer must distinguish
+  "absent/legacy" from "present but zero".
 - Stable error codes live in `codes.go`. Keep the set small - no codes for one-off
   situations. Each constant documents its HTTP status. Clients branch on `Code`,
   never on `Message`.
@@ -102,6 +114,7 @@ fix the code, not the test.
   scope the user approved commit there without asking again. Never push
   without explicit user approval.
 - Never reference plan phases, task numbers, or private card IDs in commit messages.
+- No session links in commits or PRs.
 - Write conventional commits - `type(scope): concise description`. Keep them
   short and focused; use bullet points in the body for the what and why, no
   long paragraphs.
