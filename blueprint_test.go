@@ -256,3 +256,27 @@ func TestBlueprintViewPlainLanguageWireShape(t *testing.T) {
 		`"end_detail":"readiness still found problems after 3 rounds","seq":9,"pipeline":[],`+
 		`"cost":{"spent_usd":0,"run_spent_usd":0,"cap_usd":0,"run_cap_usd":0,"priced":false},"artifacts":[],"slices":[]}`)
 }
+
+func TestBlueprintViewUnattendedOmittedWhenFalse(t *testing.T) {
+	b, err := json.Marshal(BlueprintView{ID: "s1", Mode: ArchitectModeYolo, State: "running"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var keys map[string]json.RawMessage
+	if err := json.Unmarshal(b, &keys); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, ok := keys["unattended"]; ok {
+		t.Errorf("unattended on the wire when false: %s", b)
+	}
+}
+
+func TestBlueprintViewUnattendedRoundTrip(t *testing.T) {
+	pinRoundTrip(t, BlueprintView{
+		ID: "s1", Mode: ArchitectModeYolo, Unattended: true, State: "running", Seq: 3,
+		Pipeline: []PipelineStep{}, Artifacts: []ArtifactRef{}, Slices: []BlueprintSlice{},
+	}, `{"id":"s1","mode":"yolo","unattended":true,"state":"running","seq":3,"pipeline":[],`+
+		`"cost":{"spent_usd":0,"run_spent_usd":0,"cap_usd":0,"run_cap_usd":0,"priced":false},"artifacts":[],"slices":[]}`)
+}

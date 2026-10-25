@@ -19,6 +19,8 @@ type BlueprintView struct {
 	// PlainLanguage means the blueprint runs in plain language; the pane shows
 	// it. Omitted when false.
 	PlainLanguage bool `json:"plain_language,omitempty"`
+	// Unattended mirrors the blueprint's creation-time setting.
+	Unattended bool `json:"unattended,omitempty"`
 	// State is the architect's coarse lifecycle state: new (no need stated
 	// yet), running (a run is in flight), waiting (a question, gate, mockup or
 	// sign-off waits for the operator), idle (nothing runs; the next message
