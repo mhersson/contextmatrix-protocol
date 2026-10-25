@@ -167,3 +167,41 @@ func TestArchitectStartPlainLanguageWireShape(t *testing.T) {
 		t.Errorf("round trip: got %+v want %+v", back, in)
 	}
 }
+
+func TestArchitectStartUnattendedOmittedWhenFalse(t *testing.T) {
+	b, err := json.Marshal(ArchitectStart{Mode: ArchitectModeYolo})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var keys map[string]json.RawMessage
+	if err := json.Unmarshal(b, &keys); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, ok := keys["unattended"]; ok {
+		t.Errorf("unattended on the wire when false: %s", b)
+	}
+}
+
+func TestArchitectStartUnattendedRoundTrip(t *testing.T) {
+	const wire = `{"projects":["alpha"],"mode":"yolo","unattended":true}`
+
+	var in ArchitectStart
+	if err := json.Unmarshal([]byte(wire), &in); err != nil {
+		t.Fatal(err)
+	}
+
+	if !in.Unattended {
+		t.Fatalf("decode lost unattended: %+v", in)
+	}
+
+	b, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if string(b) != wire {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, wire)
+	}
+}
