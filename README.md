@@ -14,8 +14,9 @@ contextmatrix-backendkit.
   arguments every component's build runs, and the parser that turns their
   output into the change list `/health` reports. Both hold pure functions
   only - no logging, no I/O, no run-time state.
-- **Forward-compatible by discipline:** new fields are `omitempty`, decoders
-  tolerate unknown fields.
+- **Forward-compatible by discipline:** new fields are `omitempty` unless
+  their zero value means something to the consumer (see AGENTS.md), and
+  decoders tolerate unknown fields.
 - **Versioning:** additive change = minor bump. A field may be retired only
   after every importer (contextmatrix, contextmatrix-agent, contextmatrix-chat,
   contextmatrix-architect, contextmatrix-backendkit) has dropped it; the
