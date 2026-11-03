@@ -228,7 +228,7 @@ type Input struct {
 	// Ladders is the operator's quality ladder per role. It is the ONLY
 	// source of tier ordering: descent sorts it, so an operator ladder with
 	// different rungs walks correctly. A role's map must be complete (every
-	// tier in DefaultTierBars); build it with LaddersFromWire or
+	// tier in Tiers()); build it with LaddersFromWire or
 	// TierBarsFromStrings, never by hand, since a partial map reads a
 	// missing tier as bar 0.
 	Ladders Ladders
@@ -416,7 +416,7 @@ func (s *Selector) bars(role Role) map[Tier]float64 { return s.ladders.Bars(role
 // barFor returns the quality bar for t. A tier absent from the configured
 // ladder has bar 0, so it can never gate a candidate out and descent always
 // treats it as reachable. The zero-value Selector still works because bars()
-// falls back to DefaultTierBars.
+// falls back to the role's built-in ladder.
 func (s *Selector) barFor(role Role, t Tier) float64 { return s.bars(role)[t] }
 
 // lowestBar is the bottom of the configured ladder: the floor a walk can ever
@@ -429,8 +429,9 @@ func (s *Selector) lowestBar(role Role) float64 {
 // configured tier with a STRICTLY LOWER bar, highest bar first. It never
 // walks up. Derived by sorting the bar table, so there is no second
 // ordering to keep in sync and an operator ladder with different rungs
-// walks correctly. Ties on bar break by tier name for determinism; note
-// that two tiers configured to the same bar collapse into one rung.
+// walks correctly. Ties on bar break by tier name for determinism. A tier
+// tied with the requested bar is skipped; tied tiers below it stay separate
+// rungs over one pool, differing only in the favorites they consult.
 func (s *Selector) descent(role Role, requested Tier) []Tier {
 	bars := s.bars(role)
 	want := bars[requested]

@@ -89,7 +89,7 @@ func TestNewThreadsCreators(t *testing.T) {
 		{Slug: "gpt-c", PromptPricePerTok: 1e-6, CompletionPricePerTok: 2e-6, ContextWindow: 200000, ReviewerPrior: 0.88, Creator: "openai"},
 		{Slug: "claude-x", PromptPricePerTok: 1e-6, CompletionPricePerTok: 2e-6, ContextWindow: 200000, ReviewerPrior: 0.85, Creator: "anthropic"},
 	}
-	s := New(Input{Candidates: candidates, Capable: "capable-default"})
+	s := New(Input{Candidates: candidates, Capable: "capable-default", Ladders: fixtureLadders()})
 
 	panel := SeatPicks(s.SelectDiscussionPanelReport(SelectInput{Role: RoleReviewer, Tier: TierComplex, EstTokens: 50000}, 3))
 	eq(t, 3, len(panel))
@@ -102,7 +102,7 @@ func TestNewThreadsCreators(t *testing.T) {
 		candidates[i].Creator = ""
 	}
 
-	sBlind := New(Input{Candidates: candidates, Capable: "capable-default"})
+	sBlind := New(Input{Candidates: candidates, Capable: "capable-default", Ladders: fixtureLadders()})
 
 	panel = SeatPicks(sBlind.SelectDiscussionPanelReport(SelectInput{Role: RoleReviewer, Tier: TierComplex, EstTokens: 50000}, 3))
 	eq(t, 3, len(panel))
@@ -152,8 +152,9 @@ func TestNewAppliesPerRoleLadders(t *testing.T) {
 
 func TestNewWithNoLaddersUsesTheDefaults(t *testing.T) {
 	s := New(Input{Capable: "x"})
-	eq(t, 0.82, s.BarFor(RoleCoder, TierComplex))
-	eq(t, 0.82, s.BarFor(RoleReviewer, TierComplex))
+	eq(t, 0.84, s.BarFor(RoleCoder, TierComplex))
+	eq(t, 0.90, s.BarFor(RoleReviewer, TierComplex))
+	eq(t, 0.92, s.BarFor(RoleReviewer, TierCritical))
 	_, ok := s.TierOf(RoleCoder, 0.5)
 	falsy(t, ok, "below every bar clears no tier")
 }

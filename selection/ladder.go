@@ -23,56 +23,76 @@ const (
 	TierCritical Tier = "critical"
 )
 
-// tierRung pairs a tier with its default quality bar. tierLadder is the
-// single ordered source both DefaultTierBars and the monotone check in
-// TierBarsFromStrings are built from, so a tier added here is automatically
-// present and ordered in both.
+// tierRung pairs a tier with its built-in quality bar per role. tierLadder is
+// the single ordered source for DefaultTierBars, Tiers and the monotone check
+// in TierBarsFromStrings, so a tier added here is present and ordered in all
+// three.
 type tierRung struct {
-	tier Tier
-	bar  float64
+	tier     Tier
+	coder    float64
+	reviewer float64
 }
 
 var tierLadder = []tierRung{
-	{TierSimple, 0.65},
-	{TierModerate, 0.76},
-	{TierComplex, 0.82},
-	{TierCritical, 0.90},
+	{TierSimple, 0.65, 0.90},
+	{TierModerate, 0.75, 0.90},
+	{TierComplex, 0.84, 0.90},
+	{TierCritical, 0.94, 0.92},
 }
 
-// DefaultTierBars are the normalized-prior thresholds per complexity tier.
-func DefaultTierBars() map[Tier]float64 {
+func (r tierRung) bar(role Role) float64 {
+	if role == RoleReviewer {
+		return r.reviewer
+	}
+
+	return r.coder
+}
+
+// DefaultTierBars are the built-in normalized-prior thresholds per complexity
+// tier for role. An unknown role reads as coder.
+func DefaultTierBars(role Role) map[Tier]float64 {
 	out := make(map[Tier]float64, len(tierLadder))
 	for _, rung := range tierLadder {
-		out[rung.tier] = rung.bar
+		out[rung.tier] = rung.bar(role)
+	}
+
+	return out
+}
+
+// Tiers is the closed tier set in ladder order, weakest first. Roles share it.
+func Tiers() []Tier {
+	out := make([]Tier, len(tierLadder))
+	for i, rung := range tierLadder {
+		out[i] = rung.tier
 	}
 
 	return out
 }
 
 // TierBarsFromStrings converts an operator ladder to the typed map. It
-// MERGES over the defaults rather than replacing them: a partial map raises
-// or lowers the rungs it names and inherits the rest, so a one-line edit
-// like {"critical": 0.95} cannot silently drop the other three bars to zero,
-// which would admit every model carrying any prior while every Pick still
-// reported AtBar() true.
+// MERGES over the role's built-in ladder rather than replacing it: a partial
+// map raises or lowers the rungs it names and inherits the rest, so a
+// one-line edit like {"critical": 0.95} cannot silently drop the other three
+// bars to zero, which would admit every model carrying any prior while every
+// Pick still reported AtBar() true.
 //
 // It also rejects a non-monotone ladder. An inverted ladder passes name and
 // range validation but makes descent() treat the strictest tier as the
 // weakest rung with nothing below it, so escalating would return a WORSE
 // model and report no clamp. The check needs no threshold and catches
 // transposed values.
-func TierBarsFromStrings(in map[string]float64) (map[Tier]float64, error) {
+func TierBarsFromStrings(role Role, in map[string]float64) (map[Tier]float64, error) {
 	if len(in) == 0 {
 		return nil, nil
 	}
 
-	out := DefaultTierBars()
+	out := DefaultTierBars(role)
 
 	for name, bar := range in {
 		t := Tier(name)
 		if _, ok := out[t]; !ok {
 			return nil, fmt.Errorf("tier bars: unknown tier %q (known: %v)",
-				name, slices.Sorted(maps.Keys(DefaultTierBars())))
+				name, Tiers())
 		}
 
 		if math.IsNaN(bar) || bar < 0 || bar > 1 {
@@ -94,9 +114,9 @@ func TierBarsFromStrings(in map[string]float64) (map[Tier]float64, error) {
 }
 
 // Ladders is the operator's quality ladder per role. A role absent from the
-// map reads as DefaultTierBars through Bars, so a nil Ladders is the
+// map reads as its own built-in ladder through Bars, so a nil Ladders is the
 // built-in behaviour and a caller never has to special-case it. A role that
-// IS present must map every tier in DefaultTierBars: LaddersFromWire and
+// IS present must map every tier in Tiers(): LaddersFromWire and
 // TierBarsFromStrings both build a complete map by construction, but a
 // hand-built partial one reads a missing tier as bar 0 through barFor, which
 // opens that rung to any model carrying a prior.
@@ -107,7 +127,7 @@ var roleNames = map[string]Role{string(RoleCoder): RoleCoder, string(RoleReviewe
 
 // LaddersFromWire validates SelectionContext.TierBars role by role. Each
 // role's map goes through TierBarsFromStrings, so a partial map merges over
-// the defaults and a non-monotone ladder is rejected. An unknown role is an
+// that role's built-in bars and a non-monotone ladder is rejected. An unknown role is an
 // error rather than ignored: a typo silently leaving a role on the defaults
 // is the failure the operator cannot see. Empty input is nil, nil.
 func LaddersFromWire(in map[string]map[string]float64) (Ladders, error) {
@@ -124,7 +144,7 @@ func LaddersFromWire(in map[string]map[string]float64) (Ladders, error) {
 				name, slices.Sorted(maps.Keys(roleNames)))
 		}
 
-		ladder, err := TierBarsFromStrings(bars)
+		ladder, err := TierBarsFromStrings(role, bars)
 		if err != nil {
 			return nil, fmt.Errorf("tier bars for %s: %w", name, err)
 		}
@@ -145,5 +165,5 @@ func (l Ladders) Bars(role Role) map[Tier]float64 {
 		return bars
 	}
 
-	return DefaultTierBars()
+	return DefaultTierBars(role)
 }
