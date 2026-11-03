@@ -127,7 +127,7 @@ var roleNames = map[string]Role{string(RoleCoder): RoleCoder, string(RoleReviewe
 
 // LaddersFromWire validates SelectionContext.TierBars role by role. Each
 // role's map goes through TierBarsFromStrings, so a partial map merges over
-// the defaults and a non-monotone ladder is rejected. An unknown role is an
+// that role's built-in bars and a non-monotone ladder is rejected. An unknown role is an
 // error rather than ignored: a typo silently leaving a role on the defaults
 // is the failure the operator cannot see. Empty input is nil, nil.
 func LaddersFromWire(in map[string]map[string]float64) (Ladders, error) {

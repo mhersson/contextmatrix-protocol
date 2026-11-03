@@ -1167,7 +1167,7 @@ func reviewerCandidate(slug string, prior, price float64) protocol.CandidateMode
 	}
 }
 
-func TestDescentCollapsesRungsThatShareABar(t *testing.T) {
+func TestDescentOverRepeatedBars(t *testing.T) {
 	s := New(Input{Capable: "capable/default"})
 
 	eqSlice(t, []Tier{TierCritical, TierComplex, TierModerate, TierSimple}, s.descent(RoleReviewer, TierCritical))

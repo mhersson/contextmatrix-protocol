@@ -429,8 +429,9 @@ func (s *Selector) lowestBar(role Role) float64 {
 // configured tier with a STRICTLY LOWER bar, highest bar first. It never
 // walks up. Derived by sorting the bar table, so there is no second
 // ordering to keep in sync and an operator ladder with different rungs
-// walks correctly. Ties on bar break by tier name for determinism; note
-// that two tiers configured to the same bar collapse into one rung.
+// walks correctly. Ties on bar break by tier name for determinism. A tier
+// tied with the requested bar is skipped; tied tiers below it stay separate
+// rungs over one pool, differing only in the favorites they consult.
 func (s *Selector) descent(role Role, requested Tier) []Tier {
 	bars := s.bars(role)
 	want := bars[requested]
