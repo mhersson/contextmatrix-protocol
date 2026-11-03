@@ -121,7 +121,7 @@ func TestReachabilityUsesEachRolesLadder(t *testing.T) {
 		}
 	}
 
-	eq(t, 0.84, coderComplex.Bar, "the coder keeps its own built-in complex bar")
+	eq(t, 0.82, coderComplex.Bar, "the coder keeps the built-in complex bar")
 	eq(t, 1, coderComplex.Count)
 	eq(t, 0.90, reviewerComplex.Bar)
 	eq(t, 0, reviewerComplex.Count, "the raised reviewer bar is not cleared")
@@ -131,6 +131,7 @@ func TestReachabilityWithTiedReviewerBars(t *testing.T) {
 	s := New(Input{
 		Candidates: []protocol.CandidateModel{reviewerCandidate("r/mid", 0.91, 1)},
 		Capable:    "capable/default",
+		Ladders:    tiedReviewerLadders(),
 	})
 
 	var tiers []Tier

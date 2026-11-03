@@ -742,7 +742,7 @@ func TestMonotonicityHoldsOnTheAutoPathAndFavoritesAreTheException(t *testing.T)
 }
 
 func TestPartialLadderCannotZeroTheUnnamedBars(t *testing.T) {
-	bars, err := TierBarsFromStrings(RoleCoder, map[string]float64{"critical": 0.95})
+	bars, err := TierBarsFromStrings(map[string]float64{"critical": 0.95})
 	fatalIf(t, err)
 
 	s := ladderSelector(nil)
@@ -752,7 +752,7 @@ func TestPartialLadderCannotZeroTheUnnamedBars(t *testing.T) {
 	truthy(t, got.OK)
 	eq(t, "mid/one", got.Model, "the moderate bar must still be the built-in one")
 	truthy(t, got.AtBar())
-	near(t, 0.75, got.RequestedBar, 1e-9)
+	near(t, 0.76, got.RequestedBar, 1e-9)
 }
 
 // TestOperatorLadderDrivesTheWalk proves the knob is not decorative: replacing
@@ -797,12 +797,12 @@ func TestDescentCollapsesTiedAdjacentBars(t *testing.T) {
 
 func TestTierBarsIncludeCritical(t *testing.T) {
 	s := &Selector{}
-	if got := s.barFor(RoleCoder, TierCritical); got != 0.94 {
-		t.Errorf("critical bar = %v, want 0.94", got)
+	if got := s.barFor(RoleCoder, TierCritical); got != 0.90 {
+		t.Errorf("critical bar = %v, want 0.90", got)
 	}
 
-	if got := s.barFor(RoleCoder, TierSimple); got != 0.65 {
-		t.Errorf("simple bar = %v, want 0.65", got)
+	if got := s.barFor(RoleCoder, TierSimple); got != 0.50 {
+		t.Errorf("simple bar = %v, want 0.50", got)
 	}
 }
 
@@ -921,7 +921,7 @@ func TestNewBuildsFromWire(t *testing.T) {
 	eq(t, "alpha", s.Vendor("vendor/strong"), "the wire creator wins over the slug prefix")
 	eq(t, "vendor", s.Vendor("vendor/cheap"), "no creator falls back to the slug namespace")
 	near(t, 0.95, s.BarFor(RoleCoder, TierCritical), 1e-9, "the operator ladder reaches the selector")
-	near(t, 0.92, s.BarFor(RoleReviewer, TierCritical), 1e-9, "a role the operator left out keeps its own built-in bars")
+	near(t, 0.90, s.BarFor(RoleReviewer, TierCritical), 1e-9, "a role the operator left out keeps the built-in bars")
 	near(t, DefaultPriceHeadroom, s.headroomOrDefault(), 1e-9, "an unset headroom is the built-in one")
 
 	coder := s.SelectByComplexity(SelectInput{Role: RoleCoder, Tier: TierComplex})
@@ -1167,8 +1167,15 @@ func reviewerCandidate(slug string, prior, price float64) protocol.CandidateMode
 	}
 }
 
+// tiedReviewerLadders is a reviewer ladder whose first three bars repeat.
+func tiedReviewerLadders() Ladders {
+	return Ladders{RoleReviewer: map[Tier]float64{
+		TierSimple: 0.90, TierModerate: 0.90, TierComplex: 0.90, TierCritical: 0.92,
+	}}
+}
+
 func TestDescentOverRepeatedBars(t *testing.T) {
-	s := New(Input{Capable: "capable/default"})
+	s := New(Input{Capable: "capable/default", Ladders: tiedReviewerLadders()})
 
 	eqSlice(t, []Tier{TierCritical, TierComplex, TierModerate, TierSimple}, s.descent(RoleReviewer, TierCritical))
 	eqSlice(t, []Tier{TierComplex}, s.descent(RoleReviewer, TierComplex))
@@ -1183,6 +1190,7 @@ func TestReviewerCriticalWalksToTheTiedGroup(t *testing.T) {
 			reviewerCandidate("r/low", 0.85, 1),
 		},
 		Capable: "capable/default",
+		Ladders: tiedReviewerLadders(),
 	})
 
 	pick, rep := s.SelectByComplexityReport(SelectInput{Role: RoleReviewer, Tier: TierCritical})
@@ -1199,6 +1207,7 @@ func TestDryRungWithTiedBarsFallsToTheDefault(t *testing.T) {
 	s := New(Input{
 		Candidates: []protocol.CandidateModel{reviewerCandidate("r/low", 0.85, 1)},
 		Capable:    "capable/default",
+		Ladders:    tiedReviewerLadders(),
 	})
 
 	for _, tier := range []Tier{TierComplex, TierModerate, TierSimple} {
@@ -1220,6 +1229,7 @@ func TestTiedGroupConsultsTheStrictestRungsFavorites(t *testing.T) {
 			{Tier: "simple", Role: "reviewer", Models: []string{"r/a"}},
 		},
 		Capable: "capable/default",
+		Ladders: tiedReviewerLadders(),
 	})
 
 	pick := s.SelectByComplexity(SelectInput{Role: RoleReviewer, Tier: TierCritical})
@@ -1229,7 +1239,7 @@ func TestTiedGroupConsultsTheStrictestRungsFavorites(t *testing.T) {
 }
 
 func TestTierOfWithTiedBars(t *testing.T) {
-	s := New(Input{Capable: "capable/default"})
+	s := New(Input{Capable: "capable/default", Ladders: tiedReviewerLadders()})
 
 	tier, ok := s.TierOf(RoleReviewer, 0.95)
 	eq(t, TierCritical, tier)
