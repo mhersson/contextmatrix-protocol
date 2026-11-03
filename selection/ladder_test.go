@@ -35,7 +35,7 @@ func TestTierBarsFromStringsMergesOverTheBuiltIn(t *testing.T) {
 	truthy(t, maps.Equal(map[Tier]float64{TierSimple: 0.50, TierModerate: 0.76, TierComplex: 0.82, TierCritical: 0.95}, got))
 }
 
-func TestTierBarsFromStringsAcceptsALowerSimpleBar(t *testing.T) {
+func TestTierBarsFromStringsAcceptsARaisedSimpleBelowModerate(t *testing.T) {
 	got, err := TierBarsFromStrings(map[string]float64{"simple": 0.60})
 	fatalIf(t, err)
 	truthy(t, maps.Equal(map[Tier]float64{TierSimple: 0.60, TierModerate: 0.76, TierComplex: 0.82, TierCritical: 0.90}, got))

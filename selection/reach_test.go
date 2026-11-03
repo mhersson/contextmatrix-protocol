@@ -131,7 +131,7 @@ func TestReachabilityWithTiedReviewerBars(t *testing.T) {
 	s := New(Input{
 		Candidates: []protocol.CandidateModel{reviewerCandidate("r/mid", 0.91, 1)},
 		Capable:    "capable/default",
-		Ladders:    tiedReviewerLadders(),
+		Ladders:    tiedReviewerLadders(t),
 	})
 
 	var tiers []Tier

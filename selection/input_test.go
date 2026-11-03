@@ -160,4 +160,14 @@ func TestNewWithNoLaddersUsesTheDefaults(t *testing.T) {
 
 	_, ok := s.TierOf(RoleCoder, 0.4)
 	falsy(t, ok, "below every bar clears no tier")
+
+	for _, role := range []Role{RoleCoder, RoleReviewer} {
+		tier, ok := s.TierOf(role, 0.50)
+		truthy(t, ok, string(role))
+		eq(t, TierSimple, tier, string(role))
+
+		tier, ok = s.TierOf(role, 0.49)
+		falsy(t, ok, string(role))
+		eq(t, Tier(""), tier, string(role))
+	}
 }

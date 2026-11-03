@@ -930,14 +930,7 @@ func TestNewBuildsFromWire(t *testing.T) {
 
 	// The favorite is a coder rule, so the reviewer falls to the best-value
 	// pick; the blacklisted model carries the best prior and still never wins.
-	fixture := New(Input{
-		Candidates: candidates,
-		Favorites:  []protocol.FavoriteRule{{Tier: "complex", Role: "coder", Models: []string{"vendor/strong"}}},
-		Blacklist:  []string{"vendor/barred"},
-		Ladders:    fixtureLadders(),
-		Capable:    "capable/default",
-	})
-	reviewer := fixture.SelectByComplexity(SelectInput{Role: RoleReviewer, Tier: TierComplex})
+	reviewer := s.SelectByComplexity(SelectInput{Role: RoleReviewer, Tier: TierComplex})
 	eq(t, "vendor/cheap", reviewer.Model)
 	eq(t, SourceAuto, reviewer.Source)
 
@@ -1168,14 +1161,19 @@ func reviewerCandidate(slug string, prior, price float64) protocol.CandidateMode
 }
 
 // tiedReviewerLadders is a reviewer ladder whose first three bars repeat.
-func tiedReviewerLadders() Ladders {
-	return Ladders{RoleReviewer: map[Tier]float64{
-		TierSimple: 0.90, TierModerate: 0.90, TierComplex: 0.90, TierCritical: 0.92,
-	}}
+func tiedReviewerLadders(t *testing.T) Ladders {
+	t.Helper()
+
+	ladders, err := LaddersFromWire(map[string]map[string]float64{
+		"reviewer": {"simple": 0.90, "moderate": 0.90, "complex": 0.90, "critical": 0.92},
+	})
+	fatalIf(t, err)
+
+	return ladders
 }
 
 func TestDescentOverRepeatedBars(t *testing.T) {
-	s := New(Input{Capable: "capable/default", Ladders: tiedReviewerLadders()})
+	s := New(Input{Capable: "capable/default", Ladders: tiedReviewerLadders(t)})
 
 	eqSlice(t, []Tier{TierCritical, TierComplex, TierModerate, TierSimple}, s.descent(RoleReviewer, TierCritical))
 	eqSlice(t, []Tier{TierComplex}, s.descent(RoleReviewer, TierComplex))
@@ -1190,7 +1188,7 @@ func TestReviewerCriticalWalksToTheTiedGroup(t *testing.T) {
 			reviewerCandidate("r/low", 0.85, 1),
 		},
 		Capable: "capable/default",
-		Ladders: tiedReviewerLadders(),
+		Ladders: tiedReviewerLadders(t),
 	})
 
 	pick, rep := s.SelectByComplexityReport(SelectInput{Role: RoleReviewer, Tier: TierCritical})
@@ -1207,7 +1205,7 @@ func TestDryRungWithTiedBarsFallsToTheDefault(t *testing.T) {
 	s := New(Input{
 		Candidates: []protocol.CandidateModel{reviewerCandidate("r/low", 0.85, 1)},
 		Capable:    "capable/default",
-		Ladders:    tiedReviewerLadders(),
+		Ladders:    tiedReviewerLadders(t),
 	})
 
 	for _, tier := range []Tier{TierComplex, TierModerate, TierSimple} {
@@ -1229,7 +1227,7 @@ func TestTiedGroupConsultsTheStrictestRungsFavorites(t *testing.T) {
 			{Tier: "simple", Role: "reviewer", Models: []string{"r/a"}},
 		},
 		Capable: "capable/default",
-		Ladders: tiedReviewerLadders(),
+		Ladders: tiedReviewerLadders(t),
 	})
 
 	pick := s.SelectByComplexity(SelectInput{Role: RoleReviewer, Tier: TierCritical})
@@ -1239,7 +1237,7 @@ func TestTiedGroupConsultsTheStrictestRungsFavorites(t *testing.T) {
 }
 
 func TestTierOfWithTiedBars(t *testing.T) {
-	s := New(Input{Capable: "capable/default", Ladders: tiedReviewerLadders()})
+	s := New(Input{Capable: "capable/default", Ladders: tiedReviewerLadders(t)})
 
 	tier, ok := s.TierOf(RoleReviewer, 0.95)
 	eq(t, TierCritical, tier)

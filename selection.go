@@ -20,7 +20,7 @@ type SelectionContext struct {
 	// "reviewer") to tier name ("simple", "moderate", "complex", "critical")
 	// to normalised-prior bar. A missing role or an empty map means the
 	// built-in ladder; a partial tier map merges over the built-in bars. The
-	// agent validates each role's ladder with selection.LaddersFromWire and
+	// agent validates each role's ladder with selection.TierBarsFromStrings and
 	// falls back to the built-in bars for that role, logging on the card,
 	// when it does not validate. Absent for CMs older than this field, which
 	// is the same as sending nothing.
