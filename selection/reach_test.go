@@ -88,13 +88,10 @@ func TestOrphanFavoriteTiersNamesFavoritesNoRungCanConsult(t *testing.T) {
 	}
 }
 
-// TestOrphanFavoriteTiersUsesTheClosedTierSet replaces the old
-// TestOrphanFavoriteTiersReadsTheLiveLadder: OrphanFavoriteTiers now checks
-// a favorite's tier against Tiers() rather than a role's live
-// ladder, because the tier set is closed - an operator ladder only reweights
-// its rungs, it never adds or drops one. So a custom ladder that omits a
-// rung does not, by itself, orphan a favorite configured on it: the name is
-// still a real tier.
+// TestOrphanFavoriteTiersUsesTheClosedTierSet pins that a favorite's tier is
+// checked against Tiers(), not a role's live ladder: a custom ladder that omits
+// a rung does not orphan a favorite configured on it, since the name is still
+// a real tier.
 func TestOrphanFavoriteTiersUsesTheClosedTierSet(t *testing.T) {
 	s := ladderSelector(map[favKey][]string{{Tier: TierModerate}: {"mid/two"}})
 	bars := map[Tier]float64{TierSimple: 0.50, TierComplex: 0.70, TierCritical: 0.90}

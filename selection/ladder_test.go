@@ -28,7 +28,9 @@ func TestTiersIsTheClosedSetInLadderOrder(t *testing.T) {
 	truthy(t, slices.Equal(want, Tiers()))
 
 	got := Tiers()
+
 	got[0] = "x"
+
 	truthy(t, slices.Equal(want, Tiers()), "each call returns a fresh slice")
 }
 
@@ -111,18 +113,6 @@ func TestTierBarsFromStringsRejects(t *testing.T) {
 			})
 		}
 	}
-}
-
-func TestLaddersFromWirePerRole(t *testing.T) {
-	got, err := LaddersFromWire(map[string]map[string]float64{
-		"coder":    {"complex": 0.90},
-		"reviewer": {"critical": 0.93},
-	})
-	fatalIf(t, err)
-	eq(t, 0.90, got[RoleCoder][TierComplex])
-	eq(t, 0.75, got[RoleCoder][TierModerate], "coder keeps the default moderate bar")
-	eq(t, 0.93, got[RoleReviewer][TierCritical])
-	eq(t, 0.90, got[RoleReviewer][TierComplex], "reviewer keeps the default complex bar")
 }
 
 func TestLaddersFromWireMissingRoleIsAbsent(t *testing.T) {

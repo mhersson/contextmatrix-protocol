@@ -64,12 +64,12 @@ func (s *Selector) Reachability() []TierReach {
 	return out
 }
 
-// OrphanFavoriteTiers lists favorite tiers outside the closed set
-// Tiers() defines. CM sends FavoriteRule.Tier as a free string and
-// New converts it unchecked, so a typo produces a favorite no rung can ever
-// consult. The tier set is closed - an operator ladder only reweights its
-// rungs, it never adds or drops one - so the check is against the built-in
-// set rather than a role's live ladder. Sorted for a stable log line.
+// OrphanFavoriteTiers lists favorite tiers outside the closed set Tiers
+// defines. CM sends FavoriteRule.Tier as a free string and New converts it
+// unchecked, so a typo produces a favorite no rung can ever consult. The tier
+// set is closed - an operator ladder only reweights its rungs, it never adds
+// or drops one - so the check is against that set rather than a role's live
+// ladder. Sorted for a stable log line.
 func (s *Selector) OrphanFavoriteTiers() []Tier {
 	tiers := Tiers()
 

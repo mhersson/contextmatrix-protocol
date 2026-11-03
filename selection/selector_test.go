@@ -554,6 +554,7 @@ func TestCapableDefaultIsTheFloorAndIsHardFiltered(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s := newSelector(append(ladderModels(), tt.extra...), nil, nil, "capable/default")
 			s.ladders = fixtureLadders()
+
 			for id := range tt.blacklist {
 				s.blacklist[id] = true
 			}
@@ -929,8 +930,14 @@ func TestNewBuildsFromWire(t *testing.T) {
 
 	// The favorite is a coder rule, so the reviewer falls to the best-value
 	// pick; the blacklisted model carries the best prior and still never wins.
-	s.ladders = fixtureLadders()
-	reviewer := s.SelectByComplexity(SelectInput{Role: RoleReviewer, Tier: TierComplex})
+	fixture := New(Input{
+		Candidates: candidates,
+		Favorites:  []protocol.FavoriteRule{{Tier: "complex", Role: "coder", Models: []string{"vendor/strong"}}},
+		Blacklist:  []string{"vendor/barred"},
+		Ladders:    fixtureLadders(),
+		Capable:    "capable/default",
+	})
+	reviewer := fixture.SelectByComplexity(SelectInput{Role: RoleReviewer, Tier: TierComplex})
 	eq(t, "vendor/cheap", reviewer.Model)
 	eq(t, SourceAuto, reviewer.Source)
 

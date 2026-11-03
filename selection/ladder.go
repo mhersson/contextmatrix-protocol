@@ -26,8 +26,7 @@ const (
 // tierRung pairs a tier with its built-in quality bar per role. tierLadder is
 // the single ordered source for DefaultTierBars, Tiers and the monotone check
 // in TierBarsFromStrings, so a tier added here is present and ordered in all
-// three. Both priors are the intelligence index, so the roles differ only in
-// how strict each rung is.
+// three.
 type tierRung struct {
 	tier     Tier
 	coder    float64
@@ -71,11 +70,11 @@ func Tiers() []Tier {
 }
 
 // TierBarsFromStrings converts an operator ladder to the typed map. It
-// MERGES over the role's built-in ladder rather than replacing them: a partial map raises
-// or lowers the rungs it names and inherits the rest, so a one-line edit
-// like {"critical": 0.95} cannot silently drop the other three bars to zero,
-// which would admit every model carrying any prior while every Pick still
-// reported AtBar() true.
+// MERGES over the role's built-in ladder rather than replacing it: a partial
+// map raises or lowers the rungs it names and inherits the rest, so a
+// one-line edit like {"critical": 0.95} cannot silently drop the other three
+// bars to zero, which would admit every model carrying any prior while every
+// Pick still reported AtBar() true.
 //
 // It also rejects a non-monotone ladder. An inverted ladder passes name and
 // range validation but makes descent() treat the strictest tier as the
@@ -93,7 +92,7 @@ func TierBarsFromStrings(role Role, in map[string]float64) (map[Tier]float64, er
 		t := Tier(name)
 		if _, ok := out[t]; !ok {
 			return nil, fmt.Errorf("tier bars: unknown tier %q (known: %v)",
-				name, slices.Sorted(slices.Values(Tiers())))
+				name, Tiers())
 		}
 
 		if math.IsNaN(bar) || bar < 0 || bar > 1 {
