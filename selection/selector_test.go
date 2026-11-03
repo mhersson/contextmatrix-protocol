@@ -1159,3 +1159,87 @@ func TestSelectByComplexityReportBucketsModelsWithoutAPrior(t *testing.T) {
 	eqSlice(t, []string{"unscored/b"}, filteredByReason(rep)[FilterNoPrior])
 	eqSlice(t, []PoolEntry{{Model: "scored/a", Prior: 0.80, Price: 3.0 / 1e6, Outcome: PoolSelected}}, rep.Pool)
 }
+
+func reviewerCandidate(slug string, prior, price float64) protocol.CandidateModel {
+	return protocol.CandidateModel{
+		Slug: slug, PromptPricePerTok: price, CompletionPricePerTok: price,
+		ContextWindow: 200000, CoderPrior: 0.5, ReviewerPrior: prior,
+	}
+}
+
+func TestDescentCollapsesRungsThatShareABar(t *testing.T) {
+	s := New(Input{Capable: "capable/default"})
+
+	eqSlice(t, []Tier{TierCritical, TierComplex, TierModerate, TierSimple}, s.descent(RoleReviewer, TierCritical))
+	eqSlice(t, []Tier{TierComplex}, s.descent(RoleReviewer, TierComplex))
+	eqSlice(t, []Tier{TierModerate}, s.descent(RoleReviewer, TierModerate))
+	eqSlice(t, []Tier{TierSimple}, s.descent(RoleReviewer, TierSimple))
+}
+
+func TestReviewerCriticalWalksToTheTiedGroup(t *testing.T) {
+	s := New(Input{
+		Candidates: []protocol.CandidateModel{
+			reviewerCandidate("r/mid", 0.91, 1),
+			reviewerCandidate("r/low", 0.85, 1),
+		},
+		Capable: "capable/default",
+	})
+
+	pick, rep := s.SelectByComplexityReport(SelectInput{Role: RoleReviewer, Tier: TierCritical})
+
+	eq(t, "r/mid", pick.Model)
+	eq(t, SourceAuto, pick.Source)
+	eq(t, TierComplex, pick.MetTier)
+	eq(t, TierComplex, rep.Rung)
+	near(t, 0.90, rep.Bar, 1e-9)
+	near(t, 0.90, pick.LowestBar, 1e-9)
+}
+
+func TestDryRungWithTiedBarsFallsToTheDefault(t *testing.T) {
+	s := New(Input{
+		Candidates: []protocol.CandidateModel{reviewerCandidate("r/low", 0.85, 1)},
+		Capable:    "capable/default",
+	})
+
+	for _, tier := range []Tier{TierComplex, TierModerate, TierSimple} {
+		pick := s.SelectByComplexity(SelectInput{Role: RoleReviewer, Tier: tier})
+
+		eq(t, "capable/default", pick.Model, string(tier))
+		eq(t, SourceDefault, pick.Source, string(tier))
+	}
+}
+
+func TestTiedGroupConsultsTheStrictestRungsFavorites(t *testing.T) {
+	s := New(Input{
+		Candidates: []protocol.CandidateModel{
+			reviewerCandidate("r/a", 0.91, 1),
+			reviewerCandidate("r/b", 0.91, 10),
+		},
+		Favorites: []protocol.FavoriteRule{
+			{Tier: "complex", Role: "reviewer", Models: []string{"r/b"}},
+			{Tier: "simple", Role: "reviewer", Models: []string{"r/a"}},
+		},
+		Capable: "capable/default",
+	})
+
+	pick := s.SelectByComplexity(SelectInput{Role: RoleReviewer, Tier: TierCritical})
+
+	eq(t, "r/b", pick.Model)
+	eq(t, SourceFavorite, pick.Source)
+}
+
+func TestTierOfWithTiedBars(t *testing.T) {
+	s := New(Input{Capable: "capable/default"})
+
+	tier, ok := s.TierOf(RoleReviewer, 0.95)
+	eq(t, TierCritical, tier)
+	truthy(t, ok)
+
+	tier, ok = s.TierOf(RoleReviewer, 0.90)
+	eq(t, TierComplex, tier)
+	truthy(t, ok)
+
+	tier, ok = s.TierOf(RoleReviewer, 0.89)
+	eq(t, Tier(""), tier)
+	falsy(t, ok)
+}

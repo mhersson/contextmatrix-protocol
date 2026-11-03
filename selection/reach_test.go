@@ -1,6 +1,10 @@
 package selection
 
-import "testing"
+import (
+	"testing"
+
+	protocol "github.com/mhersson/contextmatrix-protocol"
+)
 
 func TestReachabilityReportsTheGapAtUnreachableTiers(t *testing.T) {
 	s := ladderSelector(nil)
@@ -121,4 +125,30 @@ func TestReachabilityUsesEachRolesLadder(t *testing.T) {
 	eq(t, 1, coderComplex.Count)
 	eq(t, 0.90, reviewerComplex.Bar)
 	eq(t, 0, reviewerComplex.Count, "the raised reviewer bar is not cleared")
+}
+
+func TestReachabilityWithTiedReviewerBars(t *testing.T) {
+	s := New(Input{
+		Candidates: []protocol.CandidateModel{reviewerCandidate("r/mid", 0.91, 1)},
+		Capable:    "capable/default",
+	})
+
+	var tiers []Tier
+
+	byTier := map[Tier]TierReach{}
+
+	for _, rc := range s.Reachability() {
+		if rc.Role == RoleReviewer {
+			tiers = append(tiers, rc.Tier)
+			byTier[rc.Tier] = rc
+		}
+	}
+
+	eqSlice(t, []Tier{TierCritical, TierComplex, TierModerate, TierSimple}, tiers)
+	eq(t, 0, byTier[TierCritical].Count)
+
+	for _, tier := range []Tier{TierComplex, TierModerate, TierSimple} {
+		near(t, 0.90, byTier[tier].Bar, 1e-9)
+		eq(t, 1, byTier[tier].Count, string(tier))
+	}
 }
