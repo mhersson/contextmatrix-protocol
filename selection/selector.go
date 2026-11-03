@@ -416,7 +416,7 @@ func (s *Selector) bars(role Role) map[Tier]float64 { return s.ladders.Bars(role
 // barFor returns the quality bar for t. A tier absent from the configured
 // ladder has bar 0, so it can never gate a candidate out and descent always
 // treats it as reachable. The zero-value Selector still works because bars()
-// falls back to the role's built-in ladder.
+// falls back to the built-in ladder.
 func (s *Selector) barFor(role Role, t Tier) float64 { return s.bars(role)[t] }
 
 // lowestBar is the bottom of the configured ladder: the floor a walk can ever

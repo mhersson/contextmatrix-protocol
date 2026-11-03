@@ -152,9 +152,22 @@ func TestNewAppliesPerRoleLadders(t *testing.T) {
 
 func TestNewWithNoLaddersUsesTheDefaults(t *testing.T) {
 	s := New(Input{Capable: "x"})
-	eq(t, 0.84, s.BarFor(RoleCoder, TierComplex))
-	eq(t, 0.90, s.BarFor(RoleReviewer, TierComplex))
-	eq(t, 0.92, s.BarFor(RoleReviewer, TierCritical))
-	_, ok := s.TierOf(RoleCoder, 0.5)
+	for _, role := range []Role{RoleCoder, RoleReviewer} {
+		eq(t, 0.50, s.BarFor(role, TierSimple), string(role))
+		eq(t, 0.82, s.BarFor(role, TierComplex), string(role))
+		eq(t, 0.90, s.BarFor(role, TierCritical), string(role))
+	}
+
+	_, ok := s.TierOf(RoleCoder, 0.4)
 	falsy(t, ok, "below every bar clears no tier")
+
+	for _, role := range []Role{RoleCoder, RoleReviewer} {
+		tier, ok := s.TierOf(role, 0.50)
+		truthy(t, ok, string(role))
+		eq(t, TierSimple, tier, string(role))
+
+		tier, ok = s.TierOf(role, 0.49)
+		falsy(t, ok, string(role))
+		eq(t, Tier(""), tier, string(role))
+	}
 }

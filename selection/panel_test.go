@@ -620,7 +620,7 @@ func TestMaxCapabilityReviewPanelSpansVendors(t *testing.T) {
 }
 
 func TestPanelUsesTheReviewerLadder(t *testing.T) {
-	// The same model clears complex as a coder (0.90 >= 0.84) but not as a
+	// The same model clears complex as a coder (0.90 >= 0.82) but not as a
 	// reviewer once the reviewer ladder is raised to 0.95: a reviewer panel
 	// at complex must descend, a coder pick must not.
 	s := sel("capable/default",
