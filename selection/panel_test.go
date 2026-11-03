@@ -25,7 +25,7 @@ func (s *Selector) candidateModels(in SelectInput, n int, pin string) []Pick {
 func TestSelectReviewPanel(t *testing.T) {
 	// Four qualifying reviewers; one will be the coder's pick (excluded).
 	// Blended $/Mtok: alpha 2.1, beta 2.7, gamma 3.0, delta 18. Bars come from
-	// DefaultTierBars (moderate 0.76); headroom 1.5.
+	// the fixture ladder (moderate 0.76); headroom 1.5.
 	s := sel("capable-default",
 		m("alpha", 0.7, 1.4, 200000, 0, 0.80),
 		m("beta", 0.9, 1.8, 200000, 0, 0.85),
@@ -329,6 +329,7 @@ func TestSelectReviewPanelFavoriteBypassesVendorFilter(t *testing.T) {
 		},
 		nil, favs, "capable-default",
 	)
+	s.ladders = fixtureLadders()
 
 	in := SelectInput{Role: RoleReviewer, Tier: TierComplex, EstTokens: 50000}
 	panel := s.reviewPanel(in, 3)
@@ -557,6 +558,7 @@ func TestSelectReviewPanelVendorPreferenceIsBoundedToTheRung(t *testing.T) {
 	}
 
 	s := newSelector(models, nil, nil, "capable/default")
+	s.ladders = fixtureLadders()
 
 	panel := s.reviewPanel(SelectInput{Role: RoleReviewer, Tier: TierComplex}, 2)
 	eq(t, 2, len(panel))

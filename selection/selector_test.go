@@ -19,10 +19,23 @@ func m(id string, promptPerM, completionPerM float64, window int, coder, reviewe
 	}
 }
 
+// fixtureLadders is the ladder the walk and panel fixtures are written against,
+// pinned for both roles so a retune of the built-ins does not move them.
+func fixtureLadders() Ladders {
+	bars := func() map[Tier]float64 {
+		return map[Tier]float64{TierSimple: 0.65, TierModerate: 0.76, TierComplex: 0.82, TierCritical: 0.90}
+	}
+
+	return Ladders{RoleCoder: bars(), RoleReviewer: bars()}
+}
+
 // sel is the test constructor: models with optional priors, no favorites, no
-// blacklist, the given capable default, built-in ladders, headroom 1.5.
+// blacklist, the given capable default, the fixture ladder, headroom 1.5.
 func sel(capable string, models ...model) *Selector {
-	return newSelector(models, nil, nil, capable)
+	s := newSelector(models, nil, nil, capable)
+	s.ladders = fixtureLadders()
+
+	return s
 }
 
 // eqSlice compares two slices element by element, for the assertions eq
@@ -122,6 +135,7 @@ func TestCandidatesArePriorsOnlyAndSkipBlacklist(t *testing.T) {
 		},
 		map[string]bool{"black/listed": true}, nil, "capable/default",
 	)
+	s.ladders = fixtureLadders()
 
 	// The complex bar (0.82) is above cheap/ok's 0.80, so the complex rung is
 	// dry and the request clamps to moderate (0.76), returning the pick a
@@ -153,6 +167,7 @@ func TestFavoritesConsideredFirst(t *testing.T) {
 		},
 		nil, map[favKey][]string{{Tier: TierComplex}: {"fav/pick"}}, "capable/default",
 	)
+	s.ladders = fixtureLadders()
 
 	got := s.SelectByComplexity(SelectInput{Role: RoleCoder, Tier: TierComplex})
 	eq(t, "fav/pick", got.Model, "favorite must win over cheaper cost-optimal")
@@ -167,11 +182,13 @@ func TestMaxCapabilityBypassesFavorites(t *testing.T) {
 
 	t.Run("favorite honored by default", func(t *testing.T) {
 		s := newSelector(models, nil, favs, "capable/default")
+		s.ladders = fixtureLadders()
 		eq(t, "fav/pick", s.SelectByComplexity(SelectInput{Role: RoleCoder, Tier: TierComplex}).Model)
 	})
 
 	t.Run("favorite bypassed with MaxCapability", func(t *testing.T) {
 		s := newSelector(models, nil, favs, "capable/default")
+		s.ladders = fixtureLadders()
 		s.maxCapability = true
 		// cheap/win is cheaper and same quality; tie breaks to cheaper.
 		eq(t, "cheap/win", s.SelectByComplexity(SelectInput{Role: RoleCoder, Tier: TierComplex}).Model)
@@ -227,6 +244,7 @@ func TestMaxCapabilityRespectsBlacklist(t *testing.T) {
 		},
 		map[string]bool{"black/listed": true}, nil, "capable-default",
 	)
+	s.ladders = fixtureLadders()
 	s.maxCapability = true
 
 	got := s.SelectByComplexity(SelectInput{Role: RoleCoder, Tier: TierSimple, EstTokens: 50000})
@@ -269,7 +287,10 @@ func ladderModels() []model {
 }
 
 func ladderSelector(favorites map[favKey][]string) *Selector {
-	return newSelector(ladderModels(), nil, favorites, "capable/default")
+	s := newSelector(ladderModels(), nil, favorites, "capable/default")
+	s.ladders = fixtureLadders()
+
+	return s
 }
 
 // oldPick recomputes the selection for in.Tier ALONE - no walk, no rung
@@ -532,6 +553,7 @@ func TestCapableDefaultIsTheFloorAndIsHardFiltered(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := newSelector(append(ladderModels(), tt.extra...), nil, nil, "capable/default")
+			s.ladders = fixtureLadders()
 			for id := range tt.blacklist {
 				s.blacklist[id] = true
 			}
@@ -719,7 +741,7 @@ func TestMonotonicityHoldsOnTheAutoPathAndFavoritesAreTheException(t *testing.T)
 }
 
 func TestPartialLadderCannotZeroTheUnnamedBars(t *testing.T) {
-	bars, err := TierBarsFromStrings(map[string]float64{"critical": 0.95})
+	bars, err := TierBarsFromStrings(RoleCoder, map[string]float64{"critical": 0.95})
 	fatalIf(t, err)
 
 	s := ladderSelector(nil)
@@ -727,9 +749,9 @@ func TestPartialLadderCannotZeroTheUnnamedBars(t *testing.T) {
 
 	got := s.SelectByComplexity(SelectInput{Role: RoleCoder, Tier: TierModerate})
 	truthy(t, got.OK)
-	eq(t, "mid/one", got.Model, "the moderate bar must still be 0.76")
+	eq(t, "mid/one", got.Model, "the moderate bar must still be the built-in one")
 	truthy(t, got.AtBar())
-	near(t, 0.76, got.RequestedBar, 1e-9)
+	near(t, 0.75, got.RequestedBar, 1e-9)
 }
 
 // TestOperatorLadderDrivesTheWalk proves the knob is not decorative: replacing
@@ -774,8 +796,8 @@ func TestDescentCollapsesTiedAdjacentBars(t *testing.T) {
 
 func TestTierBarsIncludeCritical(t *testing.T) {
 	s := &Selector{}
-	if got := s.barFor(RoleCoder, TierCritical); got != 0.90 {
-		t.Errorf("critical bar = %v, want 0.90", got)
+	if got := s.barFor(RoleCoder, TierCritical); got != 0.94 {
+		t.Errorf("critical bar = %v, want 0.94", got)
 	}
 
 	if got := s.barFor(RoleCoder, TierSimple); got != 0.65 {
@@ -898,7 +920,7 @@ func TestNewBuildsFromWire(t *testing.T) {
 	eq(t, "alpha", s.Vendor("vendor/strong"), "the wire creator wins over the slug prefix")
 	eq(t, "vendor", s.Vendor("vendor/cheap"), "no creator falls back to the slug namespace")
 	near(t, 0.95, s.BarFor(RoleCoder, TierCritical), 1e-9, "the operator ladder reaches the selector")
-	near(t, 0.90, s.BarFor(RoleReviewer, TierCritical), 1e-9, "a role the operator left out keeps the built-in bars")
+	near(t, 0.92, s.BarFor(RoleReviewer, TierCritical), 1e-9, "a role the operator left out keeps its own built-in bars")
 	near(t, DefaultPriceHeadroom, s.headroomOrDefault(), 1e-9, "an unset headroom is the built-in one")
 
 	coder := s.SelectByComplexity(SelectInput{Role: RoleCoder, Tier: TierComplex})
@@ -907,6 +929,7 @@ func TestNewBuildsFromWire(t *testing.T) {
 
 	// The favorite is a coder rule, so the reviewer falls to the best-value
 	// pick; the blacklisted model carries the best prior and still never wins.
+	s.ladders = fixtureLadders()
 	reviewer := s.SelectByComplexity(SelectInput{Role: RoleReviewer, Tier: TierComplex})
 	eq(t, "vendor/cheap", reviewer.Model)
 	eq(t, SourceAuto, reviewer.Source)
@@ -1078,6 +1101,7 @@ func TestSelectByComplexityReportBucketingIsCompleteAndDisjoint(t *testing.T) {
 	}
 
 	s := newSelector(models, map[string]bool{"low/one": true}, nil, "capable/default")
+	s.ladders = fixtureLadders()
 
 	in := SelectInput{
 		Role: RoleCoder, Tier: TierModerate, EstTokens: 15000,

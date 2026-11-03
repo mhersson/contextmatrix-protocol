@@ -90,7 +90,7 @@ func TestOrphanFavoriteTiersNamesFavoritesNoRungCanConsult(t *testing.T) {
 
 // TestOrphanFavoriteTiersUsesTheClosedTierSet replaces the old
 // TestOrphanFavoriteTiersReadsTheLiveLadder: OrphanFavoriteTiers now checks
-// a favorite's tier against DefaultTierBars rather than a role's live
+// a favorite's tier against Tiers() rather than a role's live
 // ladder, because the tier set is closed - an operator ladder only reweights
 // its rungs, it never adds or drops one. So a custom ladder that omits a
 // rung does not, by itself, orphan a favorite configured on it: the name is
@@ -120,7 +120,7 @@ func TestReachabilityUsesEachRolesLadder(t *testing.T) {
 		}
 	}
 
-	eq(t, 0.82, coderComplex.Bar)
+	eq(t, 0.84, coderComplex.Bar, "the coder keeps its own built-in complex bar")
 	eq(t, 1, coderComplex.Count)
 	eq(t, 0.90, reviewerComplex.Bar)
 	eq(t, 0, reviewerComplex.Count, "the raised reviewer bar is not cleared")

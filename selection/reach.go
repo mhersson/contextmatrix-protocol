@@ -24,7 +24,7 @@ type TierReach struct {
 // reveal. Rows are ordered role, then strictest tier first, each role
 // measured against its own ladder.
 func (s *Selector) Reachability() []TierReach {
-	out := make([]TierReach, 0, 2*len(DefaultTierBars()))
+	out := make([]TierReach, 0, 2*len(Tiers()))
 
 	for _, role := range []Role{RoleCoder, RoleReviewer} {
 		bars := s.bars(role)
@@ -65,18 +65,18 @@ func (s *Selector) Reachability() []TierReach {
 }
 
 // OrphanFavoriteTiers lists favorite tiers outside the closed set
-// DefaultTierBars defines. CM sends FavoriteRule.Tier as a free string and
+// Tiers() defines. CM sends FavoriteRule.Tier as a free string and
 // New converts it unchecked, so a typo produces a favorite no rung can ever
 // consult. The tier set is closed - an operator ladder only reweights its
 // rungs, it never adds or drops one - so the check is against the built-in
 // set rather than a role's live ladder. Sorted for a stable log line.
 func (s *Selector) OrphanFavoriteTiers() []Tier {
-	bars := DefaultTierBars()
+	tiers := Tiers()
 
 	seen := map[Tier]bool{}
 
 	for key := range s.favorites {
-		if _, ok := bars[key.Tier]; !ok {
+		if !slices.Contains(tiers, key.Tier) {
 			seen[key.Tier] = true
 		}
 	}
