@@ -40,6 +40,8 @@ type SelectionContext struct {
 // Artificial Analysis indices in [0,1] (coder = coding index / max,
 // reviewer = intelligence index / max).
 type CandidateModel struct {
+	// Slug is the model slug, or a Claude Code model ID (claude-opus-5-5, ...)
+	// when the trigger's LLMEndpoint.Type is "claude_code".
 	Slug                  string  `json:"slug"`
 	PromptPricePerTok     float64 `json:"prompt_price_per_tok"`
 	CompletionPricePerTok float64 `json:"completion_price_per_tok"`
@@ -48,8 +50,9 @@ type CandidateModel struct {
 	ReviewerPrior         float64 `json:"reviewer_prior"`
 	// Creator is the model creator's vendor namespace prefix (openai,
 	// anthropic, z-ai, qwen, ...). Empty when unknown (operator prior
-	// override, pre-v0.15 CM); an empty Creator exempts the model from
-	// vendor-diversity treatment in the agent's selector.
+	// override, pre-v0.15 CM). CM sends it empty for Claude Code candidates.
+	// An empty Creator exempts the model from vendor-diversity treatment in
+	// the agent's selector.
 	Creator string `json:"creator,omitempty"`
 }
 

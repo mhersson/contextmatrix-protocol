@@ -15,7 +15,8 @@ type ChatStartPayload struct {
 	// container then merges an MCP entry with no Authorization header.
 	MCPAPIKey string `json:"mcp_api_key,omitempty"`
 	// Model is the model slug the chat worker should run. CM supplies it on
-	// every chat-start (the chat backend has no server-side default).
+	// every chat-start (the chat backend has no server-side default). A Claude
+	// Code model ID (claude-opus-5-5, ...) when LLMEndpoint.Type is "claude_code".
 	Model string `json:"model,omitempty"`
 	// Resume, when non-nil, is the rehydration payload describing the prior
 	// transcript. The backend writes it to /run/cm-chat/resume.jsonl inside
