@@ -19,7 +19,8 @@ type SubscriptionUsage struct {
 	// Status is the vendor's status for the window: "allowed", "allowed_warning"
 	// or "rejected". Display only; consumers never branch on it.
 	Status string `json:"status,omitempty"`
-	// ResetsAt is when the window resets.
+	// ResetsAt is when the window resets. Always set: a producer drops a window
+	// whose reset time it does not know.
 	ResetsAt time.Time `json:"resets_at"`
 }
 

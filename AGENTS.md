@@ -29,11 +29,10 @@ index; read it before editing a specific DTO.
   is the reference reading of a build's merge history: the `git log`
   arguments every component's build runs and a pure parse of their output
   into `[]protocol.Change`, so CM, the agent, chat and the architect filter
-  their history by one rule. Each package's scope
-  is exactly that. No logging, no I/O (the build runs git, not `changelog/`), no
-  run-time state, no types from any other module. If a change needs one of those
-  it belongs in the consumer, and if the line erodes the package moves to its
-  own module.
+  their history by one rule. Each package's scope is exactly that. No logging,
+  no I/O (the build runs git, not `changelog/`), no run-time state, no types
+  from any other module. If a change needs one of those it belongs in the
+  consumer, and if the line erodes the package moves to its own module.
 - **Never break the wire shape.** Additive change only: new fields are
   `omitempty`, decoders tolerate unknown fields. The exception is a field whose
   zero value means something to the consumer: it carries no `omitempty`, and
