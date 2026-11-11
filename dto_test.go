@@ -462,6 +462,111 @@ func TestLogTokenUsageCostDecode(t *testing.T) {
 	}
 }
 
+func TestLogTokenUsageSubscriptionWireShape(t *testing.T) {
+	reset := time.Date(2026, 11, 18, 7, 0, 0, 0, time.UTC)
+	u := LogTokenUsage{
+		InputTokens: 4, OutputTokens: 125, CacheReadTokens: 3844, CacheCreateTokens: 3977,
+		CostBasis:    CostBasisSubscription,
+		Subscription: []SubscriptionUsage{{Window: "seven_day", Utilization: 0, Status: "allowed", ResetsAt: reset}},
+	}
+
+	b, err := json.Marshal(u)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := `{"input_tokens":4,"output_tokens":125,"cache_read_tokens":3844,"cache_creation_tokens":3977,` +
+		`"cost_basis":"subscription","subscription":[{"window":"seven_day","utilization":0,"status":"allowed",` +
+		`"resets_at":"2026-11-18T07:00:00Z"}]}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+
+	// A consumer predating the subscription fields decodes the frame without error.
+	var legacy struct {
+		InputTokens       int64   `json:"input_tokens"`
+		OutputTokens      int64   `json:"output_tokens"`
+		CacheReadTokens   int64   `json:"cache_read_tokens"`
+		CacheCreateTokens int64   `json:"cache_creation_tokens"`
+		CostUSD           float64 `json:"cost_usd,omitempty"`
+	}
+	if err := json.Unmarshal(b, &legacy); err != nil {
+		t.Fatal(err)
+	}
+
+	if legacy.InputTokens != 4 || legacy.OutputTokens != 125 || legacy.CacheReadTokens != 3844 ||
+		legacy.CacheCreateTokens != 3977 || legacy.CostUSD != 0 {
+		t.Errorf("legacy decode: %+v", legacy)
+	}
+}
+
+func TestLogEntryUsageLimitWireShape(t *testing.T) {
+	ts := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+	reset := time.Date(2026, 11, 18, 7, 0, 0, 0, time.UTC)
+	e := LogEntry{Timestamp: ts, Type: "system", Content: "limit", UsageLimit: &UsageLimit{Window: "seven_day", ResetsAt: reset}}
+
+	b, err := json.Marshal(e)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := `{"ts":"2026-01-02T03:04:05Z","type":"system","content":"limit",` +
+		`"usage_limit":{"window":"seven_day","resets_at":"2026-11-18T07:00:00Z"}}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+
+	// A consumer predating the field shows an ordinary system row.
+	var legacy struct {
+		Type    string `json:"type"`
+		Content string `json:"content,omitempty"`
+	}
+	if err := json.Unmarshal(b, &legacy); err != nil || legacy.Type != "system" || legacy.Content != "limit" {
+		t.Errorf("legacy decode: %+v, %v", legacy, err)
+	}
+
+	// Unknown window and reset time: no zero time reaches the wire.
+	e.UsageLimit = &UsageLimit{}
+
+	b, err = json.Marshal(e)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want = `{"ts":"2026-01-02T03:04:05Z","type":"system","content":"limit","usage_limit":{}}`
+	if string(b) != want {
+		t.Errorf("omitzero drift:\n got %s\nwant %s", b, want)
+	}
+
+	var out LogEntry
+	if err := json.Unmarshal(b, &out); err != nil {
+		t.Fatal(err)
+	}
+
+	if out.UsageLimit == nil || out.UsageLimit.Window != "" || !out.UsageLimit.ResetsAt.IsZero() {
+		t.Errorf("unknown-reset round-trip: %+v", out.UsageLimit)
+	}
+}
+
+func TestSubscriptionFieldsDecodeFromLegacyFrame(t *testing.T) {
+	in := `{"ts":"2026-01-02T03:04:05Z","type":"usage","usage":{"input_tokens":1,"output_tokens":2,` +
+		`"cache_read_tokens":3,"cache_creation_tokens":4,"cost_usd":0.000123},"model":"m"}`
+
+	var e LogEntry
+	if err := json.Unmarshal([]byte(in), &e); err != nil {
+		t.Fatal(err)
+	}
+
+	if e.Usage == nil || e.Usage.CostUSD != 0.000123 {
+		t.Fatalf("usage: %+v", e.Usage)
+	}
+
+	if e.Usage.CostBasis != "" || e.Usage.Subscription != nil || e.UsageLimit != nil {
+		t.Errorf("legacy frame decoded subscription state: basis %q, windows %v, limit %v",
+			e.Usage.CostBasis, e.Usage.Subscription, e.UsageLimit)
+	}
+}
+
 func TestTriggerPayloadBestOfNWireShape(t *testing.T) {
 	p := TriggerPayload{CardID: "CM-001", Project: "alpha", RepoURL: "https://x/r.git", BestOfN: 3}
 

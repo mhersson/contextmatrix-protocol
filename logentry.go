@@ -20,7 +20,7 @@ type LogEntry struct {
 	// persisted entries that still carry it. "status" is an ephemeral
 	// run-state frame (Content "working" or "idle") emitted by chat-mode
 	// logbridges; consumers translate it to presence state and never
-	// persist it as a transcript row.
+	// persist it as a transcript row. A "system" frame may carry UsageLimit.
 	Type      string         `json:"type"`
 	Content   string         `json:"content,omitempty"`
 	ToolUseID string         `json:"tool_use_id,omitempty"`
@@ -43,6 +43,10 @@ type LogEntry struct {
 	// a plain fallback line, so a consumer without marker support shows an
 	// ordinary row. Only the architect sets it; absent on every other frame.
 	Marker *LogMarker `json:"marker,omitempty"`
+	// UsageLimit is set on a "system" frame when a subscription usage limit
+	// stopped the run or turn. Content stays a plain fallback line, so a
+	// consumer without usage-limit support shows an ordinary system row.
+	UsageLimit *UsageLimit `json:"usage_limit,omitempty"`
 }
 
 // LogPrompt is the reply-button half of a prompt frame. Consumers never
@@ -232,4 +236,12 @@ type LogTokenUsage struct {
 	// CostUSD is the USD cost the gateway reported for this call, never
 	// negative; 0, and absent from the wire, when the gateway reported none.
 	CostUSD float64 `json:"cost_usd,omitempty"`
+	// CostBasis is "subscription" (CostBasisSubscription) when a subscription
+	// served the call; absent for metered usage. A subscription frame never
+	// carries CostUSD: the consumer prices it as an API-equivalent estimate.
+	CostBasis string `json:"cost_basis,omitempty"`
+	// Subscription is the last-seen state of each subscription window at this
+	// call, sorted by Window. Only on subscription frames; absent when the CLI
+	// has reported none yet.
+	Subscription []SubscriptionUsage `json:"subscription,omitempty"`
 }
