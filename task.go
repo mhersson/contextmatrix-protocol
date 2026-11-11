@@ -19,7 +19,10 @@ type TriggerPayload struct {
 	BaseBranchFrom   string `json:"base_branch_from,omitempty"`
 	WorkerImage      string `json:"worker_image,omitempty"`
 	Interactive      bool   `json:"interactive,omitempty"`
-	Model            string `json:"model,omitempty"`
+	// Model is CM's default model for the run; per-card pins are resolved
+	// agent-side. A Claude Code model ID (claude-opus-5-5, ...) when
+	// LLMEndpoint.Type is "claude_code".
+	Model string `json:"model,omitempty"`
 	// BestOfN, when >= 2, asks the agent backend to race N candidate
 	// implementations and judge the winner. 0/absent = normal run.
 	BestOfN int `json:"best_of_n,omitempty"`

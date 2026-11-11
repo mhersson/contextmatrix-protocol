@@ -45,9 +45,10 @@ index; read it before editing a specific DTO.
   after every importer (contextmatrix, contextmatrix-agent, contextmatrix-chat,
   contextmatrix-architect, contextmatrix-backendkit) has dropped it; the
   retiring commit is marked `!` and ships as a minor bump.
-- **Secrets stay out of logs.** `LLMEndpoint.APIKey`, `GitToken`, `MCPAPIKey`,
-  `GitCredentialsToken`, `GuestSpec.Token`, `TaskSkillsSource.Token`, and `ResearchStart.APIKey` are
-  secrets. Never log them.
+- **Secrets stay out of logs.** `LLMEndpoint.APIKey`, `LLMEndpoint.OAuthToken`,
+  `GitToken`, `MCPAPIKey`, `GitCredentialsToken`, `GuestSpec.Token`,
+  `TaskSkillsSource.Token`, and `ResearchStart.APIKey` are secrets. Never log
+  them.
 
 ## Coding conventions
 
