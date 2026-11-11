@@ -2,7 +2,8 @@
 // selection wire types: given a SelectionContext and a per-role tier ladder,
 // which model a role and tier resolve to, and why. contextmatrix uses it to
 // preview picks; contextmatrix-agent uses it to make them, so both see one
-// rule.
+// rule. The same holds for ClaudeCodeModelID, the rule both sides use to map a
+// pinned model slug to a Claude Code model ID.
 //
 // Scope, deliberately narrow: pure functions from wire types to picks. No
 // logging, no I/O, no run-time state, no types from any other module. What a

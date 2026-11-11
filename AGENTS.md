@@ -24,10 +24,12 @@ index; read it before editing a specific DTO.
 - **The two package exceptions are `selection/` and `changelog/`.** `selection/`
   is the reference interpretation of the selection DTOs: pure functions from
   candidates plus a per-role ladder to picks, so CM's preview and the agent's
-  real selection are the same code. `changelog/` is the reference reading of a
-  build's merge history: the `git log` arguments every component's build runs
-  and a pure parse of their output into `[]protocol.Change`, so CM, the agent,
-  chat and the architect filter their history by one rule. Each package's scope
+  real selection are the same code, and the mapping from a pinned model slug
+  to a Claude Code model ID that both sides apply to card pins. `changelog/`
+  is the reference reading of a build's merge history: the `git log`
+  arguments every component's build runs and a pure parse of their output
+  into `[]protocol.Change`, so CM, the agent, chat and the architect filter
+  their history by one rule. Each package's scope
   is exactly that. No logging, no I/O (the build runs git, not `changelog/`), no
   run-time state, no types from any other module. If a change needs one of those
   it belongs in the consumer, and if the line erodes the package moves to its
