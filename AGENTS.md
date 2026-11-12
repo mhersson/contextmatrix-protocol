@@ -58,8 +58,9 @@ index; read it before editing a specific DTO.
   wire semantics and back-compat story (see `chat.go` for the pattern). These
   are the wire contract and stay despite the comment rule below.
 - New optional field → `omitempty`, unless its zero value means something
-  (see above). Use a pointer (`*T`) when the consumer must distinguish
-  "absent/legacy" from "present but zero".
+  (see above). A struct value such as `time.Time` takes `omitzero`, because
+  `omitempty` never omits a struct. Use a pointer (`*T`) when the consumer
+  must distinguish "absent/legacy" from "present but zero".
 - Stable error codes live in `codes.go`. Keep the set small - no codes for one-off
   situations. Each constant documents its HTTP status. Clients branch on `Code`,
   never on `Message`.
