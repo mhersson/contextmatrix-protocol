@@ -32,8 +32,8 @@ type ClaudeCodeModel struct {
 }
 
 // ClaudeCodeModels is the Claude Code catalog, a fresh slice on every call.
-// Fable is left out: in -p it spends usage credits once half the weekly limit
-// is used.
+// Fable is left out: under `claude -p` it spends usage credits once half the
+// weekly limit is used.
 func ClaudeCodeModels() []ClaudeCodeModel {
 	return []ClaudeCodeModel{
 		{ID: "claude-opus-5-5", ContextWindow: 1_000_000},

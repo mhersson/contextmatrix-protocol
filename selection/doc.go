@@ -7,8 +7,8 @@
 // one Claude Code model list CM and the architect check those IDs against.
 //
 // Scope, deliberately narrow: pure functions from wire types to picks, plus
-// that pin mapping and model list. No logging, no I/O, no run-time state, no types from any
-// other module. What a caller does with a pick - log it, retry, exclude a
-// model that failed - stays with the caller. If a change here needs any of those, it does not
-// belong here.
+// that pin mapping and model list. No logging, no I/O, no run-time state, no
+// types from any other module. What a caller does with a pick - log it, retry,
+// exclude a model that failed - stays with the caller. If a change here needs
+// any of those, it does not belong here.
 package selection

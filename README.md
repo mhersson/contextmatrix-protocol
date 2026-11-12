@@ -10,14 +10,16 @@ contextmatrix-backendkit.
   the selection wire types: given candidates, favorites, blacklist and a
   per-role tier ladder, which model a role and tier resolve to. Both CM and
   the agent import it so a preview and a real pick cannot disagree, and
-  both map a card's pinned model slug to a Claude Code model ID with it,
-  checked against the Claude Code model list it also holds.
+  both map a card's pinned model slug to a Claude Code model ID with it. CM
+  and the architect check those IDs against the Claude Code model list it
+  also holds.
   `changelog/` is the reading of a build's merge history: the `git log`
   arguments every component's build runs, and the parser that turns their
   output into the change list `/health` reports. Both hold pure functions
   only - no logging, no I/O, no run-time state.
-- **Forward-compatible by discipline:** new fields are `omitempty` unless
-  their zero value means something to the consumer (see AGENTS.md), and
+- **Forward-compatible by discipline:** new fields are `omitempty` (`omitzero`
+  for a struct value) unless their zero value means something to the consumer
+  (see AGENTS.md), and
   decoders tolerate unknown fields.
 - **Versioning:** additive change = minor bump. A field may be retired only
   after every importer (contextmatrix, contextmatrix-agent, contextmatrix-chat,

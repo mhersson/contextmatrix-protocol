@@ -16,7 +16,8 @@ index; read it before editing a specific DTO.
   it that way.
 - **DTOs are pure data - no business logic, no value validation.** Which worker
   statuses are valid, which models are allowed, which transitions are legal all
-  live on the CM/backend side. This package pins field *shapes*, nothing more.
+  live on the CM/backend side; the Claude Code model list is the one shared
+  set, and it lives in `selection/`. This package pins field *shapes*, nothing more.
 - **A closed wire vocabulary may ship one membership check.** When CM and a
   backend must accept the same set, its constants may come with one membership
   function (today only `ValidArchitectMode`). Membership only: no
@@ -26,7 +27,8 @@ index; read it before editing a specific DTO.
   candidates plus a per-role ladder to picks, so CM's preview and the agent's
   real selection are the same code, the mapping from a pinned model slug
   to a Claude Code model ID that both sides apply to card pins, and the
-  Claude Code model list that mapping is checked against. `changelog/`
+  Claude Code model list CM and the architect check those IDs against.
+  `changelog/`
   is the reference reading of a build's merge history: the `git log`
   arguments every component's build runs and a pure parse of their output
   into `[]protocol.Change`, so CM, the agent, chat and the architect filter
@@ -35,7 +37,7 @@ index; read it before editing a specific DTO.
   from any other module. If a change needs one of those it belongs in the
   consumer, and if the line erodes the package moves to its own module.
 - **Never break the wire shape.** Additive change only: new fields are
-  `omitempty`, decoders tolerate unknown fields. The exception is a field whose
+  `omitempty` (`omitzero` for a struct value), decoders tolerate unknown fields. The exception is a field whose
   zero value means something to the consumer: it carries no `omitempty`, and
   consumers read a missing or null list as empty. Examples are the blueprint
   view's lists (`pipeline`, `artifacts`, `slices`, a review's `findings`), its
