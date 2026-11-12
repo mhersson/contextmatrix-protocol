@@ -255,6 +255,20 @@ func TestLLMEndpointClaudeCodeWireShape(t *testing.T) {
 	}
 }
 
+// Pins the Claude Code effort when set; the pin above holds the unset case.
+func TestLLMEndpointEffortWireShape(t *testing.T) {
+	ep := LLMEndpoint{Type: LLMEndpointTypeClaudeCode, OAuthToken: "tok", Effort: "high"}
+
+	b, err := json.Marshal(ep) //nolint:gosec // G117: pins the wire bytes of a fixture token
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if string(b) != `{"type":"claude_code","oauth_token":"tok","effort":"high"}` {
+		t.Errorf("wire drift: %s", b)
+	}
+}
+
 // Pins the git credentials token field on chat start: absent marshals to nothing,
 // so pre-v0.5.2 consumers see identical bytes.
 func TestChatStartPayloadGitCredentialsTokenWireShape(t *testing.T) {
