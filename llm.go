@@ -18,4 +18,7 @@ type LLMEndpoint struct {
 	// Secret: never log it, never send it to an HTTP endpoint; the backend
 	// hands it to the `claude` process environment and nothing else.
 	OAuthToken string `json:"oauth_token,omitempty"`
+	// Effort is the Claude Code `--effort` level when Type is "claude_code";
+	// empty means Claude Code's default.
+	Effort string `json:"effort,omitempty"`
 }

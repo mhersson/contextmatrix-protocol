@@ -255,6 +255,34 @@ func TestLLMEndpointClaudeCodeWireShape(t *testing.T) {
 	}
 }
 
+// Pins the optional Claude Code effort: absent marshals to nothing, so a
+// consumer predating the field sees identical bytes and ignores it when set.
+func TestLLMEndpointEffortWireShape(t *testing.T) {
+	ep := LLMEndpoint{Type: LLMEndpointTypeClaudeCode, OAuthToken: "tok", Effort: "high"}
+
+	b, err := json.Marshal(ep) //nolint:gosec // G117: pins the wire bytes of a fixture token
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if string(b) != `{"type":"claude_code","oauth_token":"tok","effort":"high"}` {
+		t.Errorf("wire drift: %s", b)
+	}
+
+	var out LLMEndpoint
+	if err := json.Unmarshal(b, &out); err != nil || out != ep {
+		t.Errorf("round-trip mismatch: %+v, %v", out, err)
+	}
+
+	var legacy struct {
+		Type       string `json:"type"`
+		OAuthToken string `json:"oauth_token,omitempty"`
+	}
+	if err := json.Unmarshal(b, &legacy); err != nil || legacy.Type != "claude_code" || legacy.OAuthToken != "tok" {
+		t.Errorf("legacy decode: %+v, %v", legacy, err)
+	}
+}
+
 // Pins the git credentials token field on chat start: absent marshals to nothing,
 // so pre-v0.5.2 consumers see identical bytes.
 func TestChatStartPayloadGitCredentialsTokenWireShape(t *testing.T) {
