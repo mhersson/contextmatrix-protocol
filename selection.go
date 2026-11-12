@@ -13,8 +13,9 @@ type SelectionContext struct {
 	// Favorites are operator preferences considered before cost-optimal
 	// auto-selection (still subject to tier bar, blacklist, and window fit).
 	Favorites []FavoriteRule `json:"favorites,omitempty"`
-	// Blacklist is the set of OpenRouter slugs the agent must never
-	// auto-select (learned harness-incompatibility).
+	// Blacklist is the set of model slugs the agent must never auto-select
+	// (learned harness-incompatibility), or Claude Code model IDs when the
+	// trigger's LLMEndpoint.Type is "claude_code".
 	Blacklist []string `json:"blacklist,omitempty"`
 	// TierBars is the operator's quality ladder per role: role name ("coder",
 	// "reviewer") to tier name ("simple", "moderate", "complex", "critical")
@@ -57,11 +58,13 @@ type CandidateModel struct {
 }
 
 // FavoriteRule is an operator-configured preference: for the given complexity
-// Tier (and optionally a specific Role), prefer these model slugs in order
-// over cost-optimal auto-selection. An empty Role applies the rule to all
-// roles. Tier is one of: simple, moderate, complex, critical.
+// Tier (and optionally a specific Role), prefer these models in order over
+// cost-optimal auto-selection. An empty Role applies the rule to all roles.
+// Tier is one of: simple, moderate, complex, critical.
 type FavoriteRule struct {
-	Tier   string   `json:"tier"`
-	Role   string   `json:"role,omitempty"`
+	Tier string `json:"tier"`
+	Role string `json:"role,omitempty"`
+	// Models are model slugs, or Claude Code model IDs when the trigger's
+	// LLMEndpoint.Type is "claude_code".
 	Models []string `json:"models"`
 }

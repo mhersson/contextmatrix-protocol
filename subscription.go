@@ -17,7 +17,8 @@ type SubscriptionUsage struct {
 	// exceed 1 while overage is in use. Zero means unused, so it is always sent.
 	Utilization float64 `json:"utilization"`
 	// Status is the vendor's status for the window: "allowed", "allowed_warning"
-	// or "rejected". Display only; consumers never branch on it.
+	// or "rejected". "rejected" means the window is at its limit until ResetsAt,
+	// whatever Utilization says.
 	Status string `json:"status,omitempty"`
 	// ResetsAt is when the window resets. Always set: a producer drops a window
 	// whose reset time it does not know.

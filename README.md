@@ -10,13 +10,16 @@ contextmatrix-backendkit.
   the selection wire types: given candidates, favorites, blacklist and a
   per-role tier ladder, which model a role and tier resolve to. Both CM and
   the agent import it so a preview and a real pick cannot disagree, and
-  both map a card's pinned model slug to a Claude Code model ID with it.
+  both map a card's pinned model slug to a Claude Code model ID with it. CM
+  and the architect check those IDs against the Claude Code model list it
+  also holds.
   `changelog/` is the reading of a build's merge history: the `git log`
   arguments every component's build runs, and the parser that turns their
   output into the change list `/health` reports. Both hold pure functions
   only - no logging, no I/O, no run-time state.
-- **Forward-compatible by discipline:** new fields are `omitempty` unless
-  their zero value means something to the consumer (see AGENTS.md), and
+- **Forward-compatible by discipline:** new fields are `omitempty` (`omitzero`
+  for a struct value) unless their zero value means something to the consumer
+  (see AGENTS.md), and
   decoders tolerate unknown fields.
 - **Versioning:** additive change = minor bump. A field may be retired only
   after every importer (contextmatrix, contextmatrix-agent, contextmatrix-chat,
@@ -35,7 +38,7 @@ index points at the file that owns each part:
 | `task.go`       | CM→backend task lifecycle: trigger, kill, stop-all, message (and the structured answers a question-round reply carries, or the action, revision and settings of a mockup reply), promote, end-session. |
 | `callback.go`   | Backend→CM callback body: status.                                                     |
 | `selection.go`  | Model-selection inputs shipped to the agent backend: candidates (prices, priors, creator), favorites, blacklist, per-role tier bars, and the best-value price headroom. |
-| `selection/`    | The selector: tier ladders per role, descent, price band, best value, favorites, panel seats, reachability, and the pinned-slug to Claude Code model ID mapping. Pure functions over the types in `selection.go` and model slugs. |
+| `selection/`    | The selector: tier ladders per role, descent, price band, best value, favorites, panel seats, reachability, the pinned-slug to Claude Code model ID mapping, and the Claude Code model list. Pure functions over the types in `selection.go` and model slugs. |
 | `logentry.go`   | One `data:` frame on a backend's `/logs` SSE stream, plus per-call token usage and gateway cost (or, on a subscription, its cost basis and the last-seen limit windows), the usage-limit payload a system frame may carry, the reply-button prompt a text frame may carry (display text and its technical detail on a plain-language blueprint, kind hint, recommended action, the label of the text box a feedback action opens, and the tabbed question round a prompt may carry: questions with options, pros, cons and sources, an assumptions tab whose entries may carry their technical detail, and the stored answers, decisions and chat), and the blueprint transcript marker (stage divider, sheet reference or review); a round and a marker name the slice of a per-slice stage. |
 | `subscription.go` | Subscription accounting shared by usage and usage-limit frames: the subscription cost basis, one limit window's utilization, status and reset time, and the usage-limit payload (window and reset time). |
 | `chat.go`       | Chat-mode container payloads: start, resume, end, and the start response.             |

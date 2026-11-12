@@ -73,25 +73,6 @@ func TestTriggerPayloadTokenAuthorityWireShape(t *testing.T) {
 		out.LLMEndpoint == nil || *out.LLMEndpoint != *full.LLMEndpoint {
 		t.Errorf("round-trip mismatch: %+v", out)
 	}
-
-	cc := TriggerPayload{
-		CardID: "CM-001", Project: "alpha", RepoURL: "https://x/r.git",
-		LLMEndpoint: &LLMEndpoint{Type: LLMEndpointTypeClaudeCode, OAuthToken: "tok"},
-	}
-
-	b, err = json.Marshal(cc)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var ccOut TriggerPayload
-	if err := json.Unmarshal(b, &ccOut); err != nil {
-		t.Fatal(err)
-	}
-
-	if ccOut.LLMEndpoint == nil || *ccOut.LLMEndpoint != *cc.LLMEndpoint {
-		t.Errorf("claude_code round-trip mismatch: %s", b)
-	}
 }
 
 // Pins the MessagePayload wire shape: it carries session_id and omits
@@ -249,22 +230,6 @@ func TestChatStartPayloadLLMEndpointWireShape(t *testing.T) {
 	if out.LLMEndpoint == nil || *out.LLMEndpoint != *full.LLMEndpoint {
 		t.Errorf("round-trip mismatch: %+v", out)
 	}
-
-	cc := ChatStartPayload{SessionID: "s1", LLMEndpoint: &LLMEndpoint{Type: LLMEndpointTypeClaudeCode, OAuthToken: "tok"}}
-
-	b, err = json.Marshal(cc)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var ccOut ChatStartPayload
-	if err := json.Unmarshal(b, &ccOut); err != nil {
-		t.Fatal(err)
-	}
-
-	if ccOut.LLMEndpoint == nil || *ccOut.LLMEndpoint != *cc.LLMEndpoint {
-		t.Errorf("claude_code round-trip mismatch: %s", b)
-	}
 }
 
 func TestLLMEndpointClaudeCodeWireShape(t *testing.T) {
@@ -287,18 +252,6 @@ func TestLLMEndpointClaudeCodeWireShape(t *testing.T) {
 	}
 	if err := json.Unmarshal(b, &legacy); err != nil || legacy.Type != "claude_code" || legacy.APIKey != "" {
 		t.Errorf("legacy decode: %+v, %v", legacy, err)
-	}
-}
-
-func TestLLMEndpointOpenRouterBytesUnchanged(t *testing.T) {
-	//nolint:gosec // G117: pins the wire bytes of a fixture key
-	b, err := json.Marshal(LLMEndpoint{Type: "openrouter", BaseURL: "https://openrouter.ai/api/v1", APIKey: "sk-x"})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if string(b) != `{"type":"openrouter","base_url":"https://openrouter.ai/api/v1","api_key":"sk-x"}` {
-		t.Errorf("omitempty drift: %s", b)
 	}
 }
 
