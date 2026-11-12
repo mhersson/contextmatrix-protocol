@@ -28,33 +28,3 @@ func TestClaudeCodeModelID(t *testing.T) {
 		}
 	}
 }
-
-func TestClaudeCodeModels(t *testing.T) {
-	models := ClaudeCodeModels()
-	if len(models) == 0 {
-		t.Fatal("ClaudeCodeModels is empty")
-	}
-
-	seen := map[string]bool{}
-
-	for _, m := range models {
-		if id, ok := ClaudeCodeModelID(m.ID); !ok || id != m.ID {
-			t.Errorf("ClaudeCodeModelID(%q) = (%q, %v), want the ID itself", m.ID, id, ok)
-		}
-
-		if seen[m.ID] {
-			t.Errorf("duplicate model %q", m.ID)
-		}
-
-		seen[m.ID] = true
-
-		if m.ContextWindow <= 0 {
-			t.Errorf("model %q has context window %d", m.ID, m.ContextWindow)
-		}
-	}
-
-	models[0].ID = "mutated"
-	if ClaudeCodeModels()[0].ID == "mutated" {
-		t.Error("ClaudeCodeModels shares its backing array with callers")
-	}
-}

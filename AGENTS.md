@@ -16,8 +16,7 @@ index; read it before editing a specific DTO.
   it that way.
 - **DTOs are pure data - no business logic, no value validation.** Which worker
   statuses are valid, which models are allowed, which transitions are legal all
-  live on the CM/backend side; the Claude Code model list is the one shared
-  set, and it lives in `selection/`. This package pins field *shapes*, nothing more.
+  live on the CM/backend side. This package pins field *shapes*, nothing more.
 - **A closed wire vocabulary may ship one membership check.** When CM and a
   backend must accept the same set, its constants may come with one membership
   function (today only `ValidArchitectMode`). Membership only: no
@@ -25,9 +24,8 @@ index; read it before editing a specific DTO.
 - **The two package exceptions are `selection/` and `changelog/`.** `selection/`
   is the reference interpretation of the selection DTOs: pure functions from
   candidates plus a per-role ladder to picks, so CM's preview and the agent's
-  real selection are the same code, the mapping from a pinned model slug
-  to a Claude Code model ID that both sides apply to card pins, and the
-  Claude Code model list CM and the architect check those IDs against.
+  real selection are the same code, and the mapping from a pinned model slug
+  to a Claude Code model ID that both sides apply to card pins.
   `changelog/`
   is the reference reading of a build's merge history: the `git log`
   arguments every component's build runs and a pure parse of their output
