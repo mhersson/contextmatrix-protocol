@@ -340,6 +340,90 @@ func TestStatusCallbackPayloadWireShape(t *testing.T) {
 	}
 }
 
+func TestStatusCallbackPayloadRunWireShape(t *testing.T) {
+	cases := []struct {
+		name string
+		p    StatusCallbackPayload
+		want string
+	}{
+		{
+			"running carries the run id only",
+			StatusCallbackPayload{CardID: "CM-001", Project: "alpha", WorkerStatus: "running", RunID: "CM-001-k3j9x2qa"},
+			`{"card_id":"CM-001","project":"alpha","worker_status":"running","run_id":"CM-001-k3j9x2qa"}`,
+		},
+		{
+			"terminal carries the stop cause",
+			StatusCallbackPayload{
+				CardID: "CM-001", Project: "alpha", WorkerStatus: "failed", Message: "worker exited with code 1",
+				RunID: "CM-001-k3j9x2qa", StopCause: StopCauseVerifyParked,
+			},
+			`{"card_id":"CM-001","project":"alpha","worker_status":"failed","message":"worker exited with code 1",` +
+				`"run_id":"CM-001-k3j9x2qa","stop_cause":"verify_parked"}`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			b, err := json.Marshal(tc.p)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if string(b) != tc.want {
+				t.Errorf("wire drift:\n got %s\nwant %s", b, tc.want)
+			}
+
+			// A v0.44.0 consumer decodes the new bytes without error.
+			type legacy struct {
+				CardID       string `json:"card_id"`
+				Project      string `json:"project"`
+				WorkerStatus string `json:"worker_status"`
+				Message      string `json:"message,omitempty"`
+			}
+
+			var old legacy
+			if err := json.Unmarshal([]byte(tc.want), &old); err != nil {
+				t.Fatalf("legacy decode: %v", err)
+			}
+
+			if old != (legacy{tc.p.CardID, tc.p.Project, tc.p.WorkerStatus, tc.p.Message}) {
+				t.Errorf("legacy decode mismatch: %+v", old)
+			}
+		})
+	}
+}
+
+func TestStatusCallbackPayloadDecodesLegacyBody(t *testing.T) {
+	var p StatusCallbackPayload
+	if err := json.Unmarshal([]byte(`{"card_id":"c","project":"p","worker_status":"failed"}`), &p); err != nil {
+		t.Fatal(err)
+	}
+
+	if p.RunID != "" || p.StopCause != "" {
+		t.Errorf("legacy body must read as unknown: run_id=%q stop_cause=%q", p.RunID, p.StopCause)
+	}
+}
+
+func TestStopCausesAreStable(t *testing.T) {
+	// The map literal proves the values are distinct: duplicate constant keys do not compile.
+	causes := map[string]string{
+		StopCauseDone: "done", StopCauseEnded: "ended", StopCauseReviewParked: "review_parked",
+		StopCauseGatesParked: "gates_parked", StopCauseUsageLimit: "usage_limit",
+		StopCauseBudgetExceeded: "budget_exceeded", StopCauseContextLimit: "context_limit",
+		StopCauseMaxTurns: "max_turns", StopCauseToolchainMissing: "toolchain_missing",
+		StopCauseNoModel: "no_model", StopCauseVerifyParked: "verify_parked",
+		StopCauseEmptySubtask: "empty_subtask", StopCauseSplitOverflow: "split_overflow",
+		StopCauseError: "error", StopCauseKilled: "killed", StopCauseShutdown: "shutdown",
+		StopCauseTimeout: "timeout", StopCauseInfrastructure: "infrastructure",
+	}
+
+	for got, want := range causes {
+		if got != want {
+			t.Errorf("stop cause %q, want %q", got, want)
+		}
+	}
+}
+
 func TestLogEntryWireShape(t *testing.T) {
 	e := LogEntry{
 		Timestamp: time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC),
