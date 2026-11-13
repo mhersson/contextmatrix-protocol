@@ -20,4 +20,13 @@ type StatusCallbackPayload struct {
 	// backend, a worker that died without reporting). Consumers read an absent
 	// or unknown value as unknown.
 	StopCause string `json:"stop_cause,omitempty"`
+	// Kind is set on a run kind's status; absent for a card run. A run kind's
+	// status never describes the card's worker.
+	Kind string `json:"kind,omitempty"`
+	// Result is a run kind's output, on a completed status with stop cause
+	// done only.
+	Result *RunKindResult `json:"result,omitempty"`
+	// Usage is a model run kind's token usage, one row per model, on its
+	// terminal status whenever it spent anything.
+	Usage []RunUsage `json:"usage,omitempty"`
 }

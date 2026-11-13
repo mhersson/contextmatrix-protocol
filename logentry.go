@@ -225,7 +225,7 @@ type LogMarker struct {
 }
 
 // LogTokenUsage carries one model call's token accounting and gateway cost on
-// "usage"-type frames. Per model call, NOT cumulative session totals.
+// "usage"-type frames, which are per model call, NOT cumulative session totals.
 // InputTokens + CacheReadTokens + CacheCreateTokens approximates the prompt
 // size the model actually processed; consumers typically display that sum as
 // "context used".
