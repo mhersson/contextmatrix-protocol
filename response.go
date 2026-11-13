@@ -44,6 +44,8 @@ type ContainerListItem struct {
 	State       string `json:"state"`
 	StartedAt   string `json:"started_at"`
 	Tracked     bool   `json:"tracked"`
+	// Kind is the run kind; absent for a card run.
+	Kind string `json:"kind,omitempty"`
 }
 
 // ListContainersResponse is the body returned by GET /containers. OK is

@@ -1157,6 +1157,11 @@ func TestLifecycleAndResponseDTOsWireShape(t *testing.T) {
 			KillPayload{CardID: "CM-001", Project: "alpha"},
 			`{"card_id":"CM-001","project":"alpha"}`,
 		},
+		{
+			"KillPayload kind",
+			KillPayload{CardID: "CM-001", Project: "alpha", Kind: RunKindCheck},
+			`{"card_id":"CM-001","project":"alpha","kind":"check"}`,
+		},
 		{"StopAllPayload zero", StopAllPayload{}, `{}`},
 		{"StopAllPayload full", StopAllPayload{Project: "alpha"}, `{"project":"alpha"}`},
 		{"PromotePayload zero", PromotePayload{}, `{"card_id":"","project":""}`},
@@ -1198,6 +1203,15 @@ func TestLifecycleAndResponseDTOsWireShape(t *testing.T) {
 			},
 			`{"container_id":"c1","card_id":"CM-001","session_id":"sess-1","project":"alpha",` +
 				`"state":"running","started_at":"2026-01-02T03:04:05Z","tracked":true}`,
+		},
+		{
+			"ContainerListItem kind",
+			ContainerListItem{
+				ContainerID: "c1", CardID: "CM-001", Project: "alpha", State: "running",
+				StartedAt: "2026-01-02T03:04:05Z", Tracked: true, Kind: RunKindInvestigate,
+			},
+			`{"container_id":"c1","card_id":"CM-001","project":"alpha","state":"running",` +
+				`"started_at":"2026-01-02T03:04:05Z","tracked":true,"kind":"investigate"}`,
 		},
 		{"ListContainersResponse zero", ListContainersResponse{}, `{"ok":false,"containers":null}`},
 		{
@@ -1478,5 +1492,94 @@ func TestMessagePayloadMockupWireShape(t *testing.T) {
 				t.Errorf("round-trip mismatch:\n got %+v\nwant %+v", out, tt.in)
 			}
 		})
+	}
+}
+
+func TestRunKindPayloadWireShape(t *testing.T) {
+	cases := []struct {
+		name string
+		v    any
+		want string
+	}{
+		{"zero", RunKindPayload{}, `{"kind":"","card_id":"","project":"","repo_url":"","git_token":""}`},
+		{
+			"check",
+			RunKindPayload{
+				Kind: RunKindCheck, CardID: "CM-001", Project: "alpha", RepoURL: "https://example.com/r.git",
+				BaseBranch: "playbook/p1", WorkerImage: "img:1", GitToken: "tok",
+				Check: &CheckInput{
+					Verify:         &VerifyConfig{Command: "./ci/verify", TimeoutSeconds: 900},
+					CurrentCommand: "./ci/verify",
+					Text:           "Run `./ci/verify` first.",
+				},
+			},
+			`{"kind":"check","card_id":"CM-001","project":"alpha","repo_url":"https://example.com/r.git",` +
+				`"base_branch":"playbook/p1","worker_image":"img:1","git_token":"tok",` +
+				`"check":{"verify":{"command":"./ci/verify","timeout_seconds":900},` +
+				`"current_command":"./ci/verify","text":"Run ` + "`./ci/verify`" + ` first."}}`,
+		},
+		{
+			"investigate",
+			RunKindPayload{
+				Kind: RunKindInvestigate, CardID: "CM-001", Project: "alpha", RepoURL: "https://example.com/r.git",
+				GitToken: "tok", MaxCostUSD: 0.5, Model: "vendor/model-a",
+				LLMEndpoint: &LLMEndpoint{Type: "openrouter", BaseURL: "https://llm.example", APIKey: "k"},
+				Investigate: &InvestigateInput{
+					RunID: "CM-001-k3j9x2qa", StopCause: StopCauseVerifyParked, Card: "---\nid: CM-001\n---\nbody",
+					Subtasks: []string{"---\nid: CM-002\n---\n"}, Siblings: []string{"---\nid: CM-003\n---\n"},
+				},
+			},
+			`{"kind":"investigate","card_id":"CM-001","project":"alpha","repo_url":"https://example.com/r.git",` +
+				`"git_token":"tok","max_cost_usd":0.5,"model":"vendor/model-a",` +
+				`"llm_endpoint":{"type":"openrouter","base_url":"https://llm.example","api_key":"k"},` +
+				`"investigate":{"run_id":"CM-001-k3j9x2qa","stop_cause":"verify_parked",` +
+				`"card":"---\nid: CM-001\n---\nbody","subtasks":["---\nid: CM-002\n---\n"],` +
+				`"siblings":["---\nid: CM-003\n---\n"]}}`,
+		},
+		{"CheckInput zero", CheckInput{}, `{}`},
+		{"InvestigateInput zero", InvestigateInput{}, `{"run_id":"","card":""}`},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := json.Marshal(tc.v)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if string(got) != tc.want {
+				t.Errorf("got  %s\nwant %s", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestRunKindsAreStable(t *testing.T) {
+	// The map literal proves the values are distinct: duplicate constant keys do not compile.
+	kinds := map[string]string{
+		RunKindCheck: "check", RunKindInvestigate: "investigate",
+		RunKindAnalyse: "analyse", RunKindGuidancePR: "guidance_pr",
+	}
+
+	for got, want := range kinds {
+		if got != want {
+			t.Errorf("run kind %q, want %q", got, want)
+		}
+	}
+}
+
+func TestKillPayloadKindDecodesIntoLegacyShape(t *testing.T) {
+	// An older agent reads a kind-scoped kill as a card-run kill, so CM never sends it to one.
+	var legacy struct {
+		CardID  string `json:"card_id"`
+		Project string `json:"project"`
+	}
+
+	if err := json.Unmarshal([]byte(`{"card_id":"CM-001","project":"alpha","kind":"check"}`), &legacy); err != nil {
+		t.Fatal(err)
+	}
+
+	if legacy.CardID != "CM-001" || legacy.Project != "alpha" {
+		t.Errorf("legacy decode got %+v", legacy)
 	}
 }

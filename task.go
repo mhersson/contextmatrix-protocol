@@ -93,6 +93,8 @@ type MobSpec struct {
 type KillPayload struct {
 	CardID  string `json:"card_id"`
 	Project string `json:"project"`
+	// Kind kills that run kind of the card; absent kills the card run only.
+	Kind string `json:"kind,omitempty"`
 }
 
 // StopAllPayload is sent by ContextMatrix to stop all tasks.

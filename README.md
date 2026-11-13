@@ -34,7 +34,8 @@ index points at the file that owns each part:
 
 | File            | Contract                                                                              |
 | --------------- | ------------------------------------------------------------------------------------- |
-| `task.go`       | CM→backend task lifecycle: trigger, kill, stop-all, message (and the structured answers a question-round reply carries, or the action, revision and settings of a mockup reply), promote, end-session. |
+| `task.go`       | CM→backend task lifecycle: trigger, kill (a card run, or one run kind of the card), stop-all, message (and the structured answers a question-round reply carries, or the action, revision and settings of a mockup reply), promote, end-session. |
+| `runkind.go`    | Run kinds: sandboxed agent runs CM dispatches for one card over `POST /run-kind` (check, investigate; analyse and guidance_pr reserved), their payload with one input per kind. |
 | `callback.go`   | Backend→CM callback body: status, the run's id, and on a terminal status why the run stopped. |
 | `stopcause.go`  | Stop causes on a terminal status: the values a worker reports for its own run, and the values only the backend host sets (killed, shutdown, timeout, infrastructure). No membership check: consumers read an unknown value as unknown. |
 | `selection.go`  | Model-selection inputs shipped to the agent backend: candidates (prices, priors, creator), favorites, blacklist, per-role tier bars, and the best-value price headroom. |
@@ -48,6 +49,6 @@ index points at the file that owns each part:
 | `taskskills.go` | Task-skills repo pointer served by CM to the backends: clone URL, ref, and a short-lived clone token. |
 | `verify.go`     | Operator-declared verify gate (command, timeout, env allowlist), carried by the trigger payload. |
 | `codes.go`      | Stable `ErrorResponse.Code` constants - branch on these, not on `Message`.            |
-| `response.go`   | Webhook response bodies: success/error, container list, stop-all, health (the build's version, commit, build time and recent changes, and the default worker image's revision), image list. |
+| `response.go`   | Webhook response bodies: success/error, container list (each run's kind; absent for a card run), stop-all, health (the build's version, commit, build time and recent changes, and the default worker image's revision), image list. |
 | `changelog/`    | The build's change list: the git arguments every build runs (`GitLogArgs`), the 20-entry limit, and `Parse`, which keeps merged PRs newest first with merge dates in UTC and drops Dependabot and the ci, docs, chore, build, test, refactor and style types. |
 | `hmac.go`       | HMAC-SHA256 signing/verification, header names, and clock-skew windows.               |
