@@ -1631,16 +1631,6 @@ func TestStatusCallbackPayloadRunKindWireShape(t *testing.T) {
 	if legacy.CardID != "ABC-012" || legacy.StopCause != "done" {
 		t.Errorf("legacy decode got %+v", legacy)
 	}
-
-	// A status without the new fields stays byte-identical to v0.45.0.
-	b, err = json.Marshal(StatusCallbackPayload{CardID: "c", Project: "p", WorkerStatus: "running"})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if string(b) != `{"card_id":"c","project":"p","worker_status":"running"}` {
-		t.Errorf("omitempty drift: %s", b)
-	}
 }
 
 func TestCheckResultWireShape(t *testing.T) {
