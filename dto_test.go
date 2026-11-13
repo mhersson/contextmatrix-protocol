@@ -1583,3 +1583,155 @@ func TestKillPayloadKindDecodesIntoLegacyShape(t *testing.T) {
 		t.Errorf("legacy decode got %+v", legacy)
 	}
 }
+
+func TestStatusCallbackPayloadRunKindWireShape(t *testing.T) {
+	p := StatusCallbackPayload{
+		CardID: "ABC-012", Project: "abc", WorkerStatus: "completed",
+		RunID: "ABC-012-k3j9x2qa-9f2c41d07b3e4a8c9d1e2f3a4b5c6d7e", StopCause: StopCauseDone,
+		Kind: RunKindInvestigate,
+		Result: &RunKindResult{Investigate: &InvestigateResult{
+			Diagnosis: "...", Cause: DiagnosisCard,
+			Fix:      &CardFix{Verify: &VerifyConfig{Command: "./ci/verify", TimeoutSeconds: 900}},
+			Findings: []FrictionFinding{{Kind: FindingCardAdvice, Text: "...", Evidence: "..."}},
+		}},
+		Usage: []RunUsage{{Model: "vendor/model-a", LogTokenUsage: LogTokenUsage{
+			InputTokens: 41210, OutputTokens: 2210, CostUSD: 0.1534,
+		}}},
+	}
+
+	b, err := json.Marshal(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := `{"card_id":"ABC-012","project":"abc","worker_status":"completed",` +
+		`"run_id":"ABC-012-k3j9x2qa-9f2c41d07b3e4a8c9d1e2f3a4b5c6d7e","stop_cause":"done","kind":"investigate",` +
+		`"result":{"investigate":{"diagnosis":"...","cause":"card",` +
+		`"fix":{"verify":{"command":"./ci/verify","timeout_seconds":900}},` +
+		`"findings":[{"kind":"card_advice","text":"...","evidence":"..."}]}},` +
+		`"usage":[{"model":"vendor/model-a","input_tokens":41210,"output_tokens":2210,` +
+		`"cache_read_tokens":0,"cache_creation_tokens":0,"cost_usd":0.1534}]}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+
+	// A v0.45.0 consumer decodes the new bytes without error.
+	var legacy struct {
+		CardID       string `json:"card_id"`
+		Project      string `json:"project"`
+		WorkerStatus string `json:"worker_status"`
+		Message      string `json:"message,omitempty"`
+		RunID        string `json:"run_id,omitempty"`
+		StopCause    string `json:"stop_cause,omitempty"`
+	}
+	if err := json.Unmarshal(b, &legacy); err != nil {
+		t.Fatal(err)
+	}
+
+	if legacy.CardID != "ABC-012" || legacy.StopCause != "done" {
+		t.Errorf("legacy decode got %+v", legacy)
+	}
+
+	// A status without the new fields stays byte-identical to v0.45.0.
+	b, err = json.Marshal(StatusCallbackPayload{CardID: "c", Project: "p", WorkerStatus: "running"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if string(b) != `{"card_id":"c","project":"p","worker_status":"running"}` {
+		t.Errorf("omitempty drift: %s", b)
+	}
+}
+
+func TestCheckResultWireShape(t *testing.T) {
+	cases := []struct {
+		name string
+		r    CheckResult
+		want string
+	}{
+		{"zero keeps the key", CheckResult{}, `{"candidates":null}`},
+		{"empty list stays an empty list", CheckResult{Candidates: []string{}}, `{"candidates":[]}`},
+		{
+			"full",
+			CheckResult{
+				Candidates: []string{"./ci/verify"}, Trial: TrialFinished,
+				AbsentFromRepo: []string{"https://new.example.net"},
+			},
+			`{"candidates":["./ci/verify"],"trial":"finished","absent_from_repo":["https://new.example.net"]}`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			b, err := json.Marshal(tc.r)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if string(b) != tc.want {
+				t.Errorf("wire drift:\n got %s\nwant %s", b, tc.want)
+			}
+		})
+	}
+}
+
+func TestInvestigateResultWireShape(t *testing.T) {
+	cases := []struct {
+		name string
+		r    InvestigateResult
+		want string
+	}{
+		{"zero keeps diagnosis and cause", InvestigateResult{}, `{"diagnosis":"","cause":""}`},
+		{
+			"full",
+			InvestigateResult{
+				Diagnosis: "d", Cause: DiagnosisCard,
+				Fix:       &CardFix{Section: "x", RetireSubtasks: []string{"ABC-013"}},
+				ForwardTo: []string{"ABC-020"},
+				Findings:  []FrictionFinding{{Kind: FindingCode, Title: "t", Text: "x", Evidence: "e"}},
+			},
+			`{"diagnosis":"d","cause":"card",` +
+				`"fix":{"section":"x","retire_subtasks":["ABC-013"]},"forward_to":["ABC-020"],` +
+				`"findings":[{"kind":"code","title":"t","text":"x","evidence":"e"}]}`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			b, err := json.Marshal(tc.r)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if string(b) != tc.want {
+				t.Errorf("wire drift:\n got %s\nwant %s", b, tc.want)
+			}
+		})
+	}
+}
+
+func TestRunKindResultConstantsAreStable(t *testing.T) {
+	// The map literals prove the values are distinct: duplicate constant keys do not compile.
+	groups := map[string]map[string]string{
+		"trial": {
+			TrialFinished: "finished", TrialTimeout: "timeout", TrialToolchain: "toolchain",
+			TrialInfrastructure: "infrastructure", TrialRejected: "rejected",
+		},
+		"diagnosis": {
+			DiagnosisCard: "card", DiagnosisModel: "model",
+			DiagnosisEnvironment: "environment", DiagnosisEcosystem: "ecosystem",
+		},
+		"finding": {
+			FindingGuidance: "guidance", FindingCode: "code", FindingCardAdvice: "card_advice",
+			FindingProjectVerify: "project_verify", FindingHardCard: "hard_card", FindingEcosystem: "ecosystem",
+		},
+	}
+
+	for name, group := range groups {
+		for got, want := range group {
+			if got != want {
+				t.Errorf("%s constant %q, want %q", name, got, want)
+			}
+		}
+	}
+}
