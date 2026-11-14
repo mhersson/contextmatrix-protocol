@@ -38,12 +38,13 @@ type CardKillResult struct {
 // wire for compatibility.
 type ContainerListItem struct {
 	ContainerID string `json:"container_id"`
-	CardID      string `json:"card_id"`
-	SessionID   string `json:"session_id,omitempty"`
-	Project     string `json:"project"`
-	State       string `json:"state"`
-	StartedAt   string `json:"started_at"`
-	Tracked     bool   `json:"tracked"`
+	// CardID is empty for guidance_pr.
+	CardID    string `json:"card_id"`
+	SessionID string `json:"session_id,omitempty"`
+	Project   string `json:"project"`
+	State     string `json:"state"`
+	StartedAt string `json:"started_at"`
+	Tracked   bool   `json:"tracked"`
 	// Kind is the run kind; absent for a card run.
 	Kind string `json:"kind,omitempty"`
 }

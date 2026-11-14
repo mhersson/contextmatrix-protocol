@@ -1,18 +1,25 @@
 package protocol
 
-// Run kinds are sandboxed agent runs Sentinel dispatches for one card. They get
-// no MCP key, never write the card, and report only on their terminal status.
+// Run kinds are sandboxed agent runs Sentinel dispatches, each for one card or,
+// for guidance_pr, one project. They get no MCP key, never write the card, and
+// report only on their terminal status.
 const (
 	RunKindCheck       = "check"       // no model
 	RunKindInvestigate = "investigate" // model
-	// Reserved; their inputs and results are added when they ship.
-	RunKindAnalyse    = "analyse"
-	RunKindGuidancePR = "guidance_pr"
+	RunKindAnalyse     = "analyse"     // model
+	RunKindGuidancePR  = "guidance_pr" // no model
 )
+
+// GuidanceBranchPrefix + the project name is the standing guidance PR's head
+// branch. Project names are branch-safe. The slash keeps it out of the
+// card-branch shape cm/<id>.
+const GuidanceBranchPrefix = "cm/sentinel/"
 
 // RunKindPayload is the body of POST /run-kind.
 type RunKindPayload struct {
-	Kind    string `json:"kind"`
+	Kind string `json:"kind"`
+	// CardID is empty for guidance_pr, a project-level kind. Every other kind
+	// requires it.
 	CardID  string `json:"card_id"`
 	Project string `json:"project"`
 	RepoURL string `json:"repo_url"`
@@ -22,8 +29,9 @@ type RunKindPayload struct {
 	// WorkerImage is the project's worker image, so a trial run sees the
 	// toolchain the card's runs see. Empty = the backend default.
 	WorkerImage string `json:"worker_image,omitempty"`
-	// GitToken clones RepoURL. It carries no expiry and is never
-	// refreshed: the run clones once, at start.
+	// GitToken authenticates the run's git access to RepoURL (and, for
+	// guidance_pr, its host). It carries no expiry and is never refreshed: the
+	// run is short.
 	GitToken string `json:"git_token"`
 
 	// Model kinds only; MaxCostUSD must be > 0 for them.
@@ -35,6 +43,8 @@ type RunKindPayload struct {
 	// Exactly the input named by Kind is set.
 	Check       *CheckInput       `json:"check,omitempty"`
 	Investigate *InvestigateInput `json:"investigate,omitempty"`
+	Analyse     *AnalyseInput     `json:"analyse,omitempty"`
+	GuidancePR  *GuidancePRInput  `json:"guidance_pr,omitempty"`
 }
 
 // CheckInput drives the check kind on the base branch. It always lists the
@@ -70,11 +80,46 @@ type InvestigateInput struct {
 	Siblings []string `json:"siblings,omitempty"`
 }
 
+// AnalyseInput drives the analyse kind on one finished card run.
+type AnalyseInput struct {
+	// RunID is the finished run's run_id; its durable-log section is read.
+	RunID string `json:"run_id"`
+	// StopCause is that run's stop cause; empty when CM's stall or lost-worker
+	// detection ended it or the cause is unknown.
+	StopCause string `json:"stop_cause,omitempty"`
+	// Card is the card file as CM stores it now.
+	Card string `json:"card"`
+	// Verify is the card-over-project verify in force.
+	Verify *VerifyConfig `json:"verify,omitempty"`
+	// Subtasks are the card's subtasks, each as its card file.
+	Subtasks []string `json:"subtasks,omitempty"`
+}
+
+// GuidancePRInput drives the no-model guidance_pr kind: it writes Section
+// into the project's block of the repo's instruction file, with the run's
+// secrets masked, on GuidanceBranchPrefix+project and opens or updates the PR.
+type GuidancePRInput struct {
+	// ExpectHead is the branch tip of Sentinel's last push while its PR is
+	// open. Empty = no open Sentinel PR: start the branch from the base branch.
+	ExpectHead string `json:"expect_head,omitempty"`
+	// Section is the guidance this PR proposes, CM-vetted, appended to the
+	// block's content on the base branch. Never empty.
+	Section string `json:"section"`
+	// Allowed are text-check entries CM accepts although the base branch lacks
+	// them (each appears in the source card's human-written text).
+	Allowed []string `json:"allowed,omitempty"`
+	// Title is the PR title and the commit subject; Body is the PR body.
+	Title string `json:"title"`
+	Body  string `json:"body"`
+}
+
 // RunKindResult holds the output of the kind named on the status; exactly that
 // field is set.
 type RunKindResult struct {
 	Check       *CheckResult       `json:"check,omitempty"`
 	Investigate *InvestigateResult `json:"investigate,omitempty"`
+	Analyse     *AnalyseResult     `json:"analyse,omitempty"`
+	GuidancePR  *GuidancePRResult  `json:"guidance_pr,omitempty"`
 }
 
 // RunUsage is one model's usage over a run kind. A run kind has no MCP key, so
@@ -129,6 +174,33 @@ const (
 	DiagnosisModel       = "model"       // the card is fine; rerun unchanged so the agent's escalation applies
 	DiagnosisEnvironment = "environment" // outside the card and the ecosystem: credentials, network, the worker image
 	DiagnosisEcosystem   = "ecosystem"   // a bug in ContextMatrix or the agent
+)
+
+// AnalyseResult is the analyse kind's output.
+type AnalyseResult struct {
+	// Findings are the run's friction findings. Never null; empty = none.
+	Findings []FrictionFinding `json:"findings"`
+}
+
+// GuidancePRResult is the guidance_pr kind's output.
+type GuidancePRResult struct {
+	// Outcome is a Guidance constant.
+	Outcome string `json:"outcome"`
+	// PRURL, HeadSHA and File are set on pushed and unchanged: the PR, the
+	// branch tip, and AGENTS.md or CLAUDE.md.
+	PRURL   string `json:"pr_url,omitempty"`
+	HeadSHA string `json:"head_sha,omitempty"`
+	File    string `json:"file,omitempty"`
+	// AbsentFromRepo is set on refused: the section's commands, URLs and
+	// hostnames the base branch lacks that Allowed does not list.
+	AbsentFromRepo []string `json:"absent_from_repo,omitempty"`
+}
+
+const (
+	GuidancePushed    = "pushed"    // one commit pushed; PR opened or its title and body updated
+	GuidanceUnchanged = "unchanged" // the block already holds Section; no commit; title and body updated
+	GuidanceStale     = "stale"     // the branch or PR is not as ExpectHead says; nothing written
+	GuidanceRefused   = "refused"   // the text check failed; nothing written
 )
 
 // CardFix is the closed fix shape. At least one field is set.

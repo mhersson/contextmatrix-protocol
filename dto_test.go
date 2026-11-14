@@ -1538,6 +1538,42 @@ func TestRunKindPayloadWireShape(t *testing.T) {
 		},
 		{"CheckInput zero", CheckInput{}, `{}`},
 		{"InvestigateInput zero", InvestigateInput{}, `{"run_id":"","card":""}`},
+		{
+			"analyse",
+			RunKindPayload{
+				Kind: RunKindAnalyse, CardID: "CM-001", Project: "alpha", RepoURL: "https://example.com/r.git",
+				GitToken: "tok", MaxCostUSD: 1, Model: "vendor/model-a",
+				LLMEndpoint: &LLMEndpoint{Type: "openrouter", BaseURL: "https://llm.example", APIKey: "k"},
+				Analyse: &AnalyseInput{
+					RunID: "CM-001-k3j9x2qa", StopCause: StopCauseDone, Card: "---\nid: CM-001\n---\nbody",
+					Verify:   &VerifyConfig{Command: "./ci/verify"},
+					Subtasks: []string{"---\nid: CM-002\n---\n"},
+				},
+			},
+			`{"kind":"analyse","card_id":"CM-001","project":"alpha","repo_url":"https://example.com/r.git",` +
+				`"git_token":"tok","max_cost_usd":1,"model":"vendor/model-a",` +
+				`"llm_endpoint":{"type":"openrouter","base_url":"https://llm.example","api_key":"k"},` +
+				`"analyse":{"run_id":"CM-001-k3j9x2qa","stop_cause":"done","card":"---\nid: CM-001\n---\nbody",` +
+				`"verify":{"command":"./ci/verify"},"subtasks":["---\nid: CM-002\n---\n"]}}`,
+		},
+		{"AnalyseInput zero", AnalyseInput{}, `{"run_id":"","card":""}`},
+		{
+			"guidance_pr",
+			RunKindPayload{
+				Kind: RunKindGuidancePR, Project: "alpha", RepoURL: "https://example.com/r.git", GitToken: "tok",
+				GuidancePR: &GuidancePRInput{
+					ExpectHead: "0123456789abcdef0123456789abcdef01234567",
+					Section:    "Run `./ci/verify` before pushing.",
+					Allowed:    []string{"https://docs.example.net"},
+					Title:      "Update agent guidance", Body: "- Run the verify script first.",
+				},
+			},
+			`{"kind":"guidance_pr","card_id":"","project":"alpha","repo_url":"https://example.com/r.git",` +
+				`"git_token":"tok","guidance_pr":{"expect_head":"0123456789abcdef0123456789abcdef01234567",` +
+				`"section":"Run ` + "`./ci/verify`" + ` before pushing.","allowed":["https://docs.example.net"],` +
+				`"title":"Update agent guidance","body":"- Run the verify script first."}}`,
+		},
+		{"GuidancePRInput zero", GuidancePRInput{}, `{"section":"","title":"","body":""}`},
 	}
 
 	for _, tc := range cases {
@@ -1715,6 +1751,10 @@ func TestRunKindResultConstantsAreStable(t *testing.T) {
 			FindingGuidance: "guidance", FindingCode: "code", FindingCardAdvice: "card_advice",
 			FindingProjectVerify: "project_verify", FindingHardCard: "hard_card", FindingEcosystem: "ecosystem",
 		},
+		"guidance": {
+			GuidancePushed: "pushed", GuidanceUnchanged: "unchanged",
+			GuidanceStale: "stale", GuidanceRefused: "refused",
+		},
 	}
 
 	for name, group := range groups {
@@ -1723,5 +1763,156 @@ func TestRunKindResultConstantsAreStable(t *testing.T) {
 				t.Errorf("%s constant %q, want %q", name, got, want)
 			}
 		}
+	}
+}
+
+// runKindResultV046 is RunKindResult as v0.46.0 consumers decode it: the check
+// and investigate members only.
+type runKindResultV046 struct {
+	Check       *CheckResult       `json:"check,omitempty"`
+	Investigate *InvestigateResult `json:"investigate,omitempty"`
+}
+
+// statusCallbackV046 is the status callback as v0.46.0 consumers decode it.
+type statusCallbackV046 struct {
+	CardID       string             `json:"card_id"`
+	Project      string             `json:"project"`
+	WorkerStatus string             `json:"worker_status"`
+	RunID        string             `json:"run_id,omitempty"`
+	StopCause    string             `json:"stop_cause,omitempty"`
+	Kind         string             `json:"kind,omitempty"`
+	Result       *runKindResultV046 `json:"result,omitempty"`
+}
+
+func TestStatusCallbackPayloadAnalyseWireShape(t *testing.T) {
+	p := StatusCallbackPayload{
+		CardID: "ABC-012", Project: "abc", WorkerStatus: "completed",
+		RunID: "ABC-012-analyse-k3j9x2qa", StopCause: StopCauseDone, Kind: RunKindAnalyse,
+		Result: &RunKindResult{Analyse: &AnalyseResult{Findings: []FrictionFinding{
+			{Kind: FindingGuidance, Text: "Run ./ci/verify before pushing.", Evidence: "two verify parks"},
+		}}},
+	}
+
+	b, err := json.Marshal(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := `{"card_id":"ABC-012","project":"abc","worker_status":"completed",` +
+		`"run_id":"ABC-012-analyse-k3j9x2qa","stop_cause":"done","kind":"analyse",` +
+		`"result":{"analyse":{"findings":[{"kind":"guidance","text":"Run ./ci/verify before pushing.",` +
+		`"evidence":"two verify parks"}]}}}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+
+	var old statusCallbackV046
+	if err := json.Unmarshal(b, &old); err != nil {
+		t.Fatal(err)
+	}
+
+	if old.Kind != RunKindAnalyse || old.Result == nil || old.Result.Check != nil || old.Result.Investigate != nil {
+		t.Errorf("v0.46.0 decode got %+v", old)
+	}
+}
+
+func TestAnalyseResultWireShape(t *testing.T) {
+	cases := []struct {
+		name string
+		r    AnalyseResult
+		want string
+	}{
+		{"zero keeps the key", AnalyseResult{}, `{"findings":null}`},
+		{"empty list stays an empty list", AnalyseResult{Findings: []FrictionFinding{}}, `{"findings":[]}`},
+		{
+			"full",
+			AnalyseResult{Findings: []FrictionFinding{{Kind: FindingCode, Title: "t", Text: "x", Evidence: "e"}}},
+			`{"findings":[{"kind":"code","title":"t","text":"x","evidence":"e"}]}`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			b, err := json.Marshal(tc.r)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if string(b) != tc.want {
+				t.Errorf("wire drift:\n got %s\nwant %s", b, tc.want)
+			}
+		})
+	}
+}
+
+func TestGuidancePRResultWireShape(t *testing.T) {
+	cases := []struct {
+		name string
+		r    GuidancePRResult
+		want string
+	}{
+		{"zero", GuidancePRResult{}, `{"outcome":""}`},
+		{
+			"pushed",
+			GuidancePRResult{
+				Outcome: GuidancePushed, PRURL: "https://example.com/r/pull/7",
+				HeadSHA: "0123456789abcdef0123456789abcdef01234567", File: "AGENTS.md",
+			},
+			`{"outcome":"pushed","pr_url":"https://example.com/r/pull/7",` +
+				`"head_sha":"0123456789abcdef0123456789abcdef01234567","file":"AGENTS.md"}`,
+		},
+		{
+			"refused",
+			GuidancePRResult{Outcome: GuidanceRefused, AbsentFromRepo: []string{"new.example.net"}},
+			`{"outcome":"refused","absent_from_repo":["new.example.net"]}`,
+		},
+		{"stale", GuidancePRResult{Outcome: GuidanceStale}, `{"outcome":"stale"}`},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			b, err := json.Marshal(tc.r)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if string(b) != tc.want {
+				t.Errorf("wire drift:\n got %s\nwant %s", b, tc.want)
+			}
+		})
+	}
+}
+
+func TestGuidancePRStatusKeepsTheEmptyCardID(t *testing.T) {
+	p := StatusCallbackPayload{
+		Project: "alpha", WorkerStatus: "completed", RunID: "alpha-guidance_pr-k3j9x2qa",
+		StopCause: StopCauseDone, Kind: RunKindGuidancePR,
+		Result: &RunKindResult{GuidancePR: &GuidancePRResult{Outcome: GuidanceStale}},
+	}
+
+	b, err := json.Marshal(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := `{"card_id":"","project":"alpha","worker_status":"completed","run_id":"alpha-guidance_pr-k3j9x2qa",` +
+		`"stop_cause":"done","kind":"guidance_pr","result":{"guidance_pr":{"outcome":"stale"}}}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+
+	var old statusCallbackV046
+	if err := json.Unmarshal(b, &old); err != nil {
+		t.Fatal(err)
+	}
+
+	if old.Kind != RunKindGuidancePR || old.Result == nil || old.Result.Check != nil || old.Result.Investigate != nil {
+		t.Errorf("v0.46.0 decode got %+v", old)
+	}
+}
+
+func TestGuidanceBranchPrefixIsStable(t *testing.T) {
+	if GuidanceBranchPrefix != "cm/sentinel/" {
+		t.Errorf("GuidanceBranchPrefix %q", GuidanceBranchPrefix)
 	}
 }
