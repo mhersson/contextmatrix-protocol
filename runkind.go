@@ -18,8 +18,8 @@ const GuidanceBranchPrefix = "cm/sentinel/"
 // RunKindPayload is the body of POST /run-kind.
 type RunKindPayload struct {
 	Kind string `json:"kind"`
-	// CardID is empty for guidance_pr, a project-level kind. It stays required
-	// for every other kind.
+	// CardID is empty for guidance_pr, a project-level kind. Every other kind
+	// requires it.
 	CardID  string `json:"card_id"`
 	Project string `json:"project"`
 	RepoURL string `json:"repo_url"`
@@ -29,8 +29,9 @@ type RunKindPayload struct {
 	// WorkerImage is the project's worker image, so a trial run sees the
 	// toolchain the card's runs see. Empty = the backend default.
 	WorkerImage string `json:"worker_image,omitempty"`
-	// GitToken clones RepoURL. It carries no expiry and is never
-	// refreshed: the run clones once, at start.
+	// GitToken authenticates the run's git access to RepoURL (and, for
+	// guidance_pr, its host). It carries no expiry and is never refreshed: the
+	// run is short.
 	GitToken string `json:"git_token"`
 
 	// Model kinds only; MaxCostUSD must be > 0 for them.
@@ -95,8 +96,8 @@ type AnalyseInput struct {
 }
 
 // GuidancePRInput drives the no-model guidance_pr kind: it writes Section
-// verbatim into the project's block of the repo's instruction file on
-// GuidanceBranchPrefix+project and opens or updates the PR.
+// into the project's block of the repo's instruction file, with the run's
+// secrets masked, on GuidanceBranchPrefix+project and opens or updates the PR.
 type GuidancePRInput struct {
 	// ExpectHead is the branch tip of Sentinel's last push while its PR is
 	// open. Empty = no open Sentinel PR: start the branch from the base branch.

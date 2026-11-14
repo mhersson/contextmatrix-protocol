@@ -1751,6 +1751,10 @@ func TestRunKindResultConstantsAreStable(t *testing.T) {
 			FindingGuidance: "guidance", FindingCode: "code", FindingCardAdvice: "card_advice",
 			FindingProjectVerify: "project_verify", FindingHardCard: "hard_card", FindingEcosystem: "ecosystem",
 		},
+		"guidance": {
+			GuidancePushed: "pushed", GuidanceUnchanged: "unchanged",
+			GuidanceStale: "stale", GuidanceRefused: "refused",
+		},
 	}
 
 	for name, group := range groups {
@@ -1901,25 +1905,14 @@ func TestGuidancePRStatusKeepsTheEmptyCardID(t *testing.T) {
 	if err := json.Unmarshal(b, &old); err != nil {
 		t.Fatal(err)
 	}
+
+	if old.Kind != RunKindGuidancePR || old.Result == nil || old.Result.Check != nil || old.Result.Investigate != nil {
+		t.Errorf("v0.46.0 decode got %+v", old)
+	}
 }
 
-func TestGuidanceConstantsAreStable(t *testing.T) {
+func TestGuidanceBranchPrefixIsStable(t *testing.T) {
 	if GuidanceBranchPrefix != "cm/sentinel/" {
 		t.Errorf("GuidanceBranchPrefix %q", GuidanceBranchPrefix)
-	}
-
-	// The map literal proves the values are distinct: duplicate constant keys do not compile.
-	outcomes := map[string]string{
-		GuidancePushed: "pushed", GuidanceUnchanged: "unchanged",
-		GuidanceStale: "stale", GuidanceRefused: "refused",
-	}
-	if len(outcomes) != 4 {
-		t.Fatalf("got %d outcomes, want 4", len(outcomes))
-	}
-
-	for got, want := range outcomes {
-		if got != want {
-			t.Errorf("outcome %q, want %q", got, want)
-		}
 	}
 }
