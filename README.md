@@ -35,7 +35,7 @@ index points at the file that owns each part:
 | File            | Contract                                                                              |
 | --------------- | ------------------------------------------------------------------------------------- |
 | `task.go`       | CM→backend task lifecycle: trigger, kill (a card run, or one run kind of the card), stop-all, message (and the structured answers a question-round reply carries, or the action, revision and settings of a mockup reply), promote, end-session. |
-| `runkind.go`    | Run kinds: sandboxed agent runs CM dispatches for one card over `POST /run-kind` (check, investigate; analyse and guidance_pr reserved), their payload with one input per kind, and their results and usage rows, which return on the status callback. |
+| `runkind.go`    | Run kinds: sandboxed agent runs CM dispatches over `POST /run-kind` (check, investigate and analyse for one card; guidance_pr, reserved until it ships, for a project), their payload with one input per kind, and their results and usage rows, which return on the status callback. |
 | `callback.go`   | Backend→CM callback body: status, the run's id, on a terminal status why the run stopped, and for a run kind its kind, its result (completed and done only) and its per-model usage. |
 | `stopcause.go`  | Stop causes on a terminal status: the values a worker reports for its own run, and the values only the backend host sets (killed, shutdown, timeout, infrastructure). No membership check: consumers read an unknown value as unknown. |
 | `selection.go`  | Model-selection inputs shipped to the agent backend: candidates (prices, priors, creator), favorites, blacklist, per-role tier bars, and the best-value price headroom. |

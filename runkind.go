@@ -5,8 +5,8 @@ package protocol
 const (
 	RunKindCheck       = "check"       // no model
 	RunKindInvestigate = "investigate" // model
-	// Reserved; their inputs and results are added when they ship.
-	RunKindAnalyse    = "analyse"
+	RunKindAnalyse     = "analyse"     // model
+	// Reserved; its input and result are added when it ships.
 	RunKindGuidancePR = "guidance_pr"
 )
 
@@ -35,6 +35,7 @@ type RunKindPayload struct {
 	// Exactly the input named by Kind is set.
 	Check       *CheckInput       `json:"check,omitempty"`
 	Investigate *InvestigateInput `json:"investigate,omitempty"`
+	Analyse     *AnalyseInput     `json:"analyse,omitempty"`
 }
 
 // CheckInput drives the check kind on the base branch. It always lists the
@@ -70,11 +71,27 @@ type InvestigateInput struct {
 	Siblings []string `json:"siblings,omitempty"`
 }
 
+// AnalyseInput drives the analyse kind on one finished card run.
+type AnalyseInput struct {
+	// RunID is the finished run's run_id; its durable-log section is read.
+	RunID string `json:"run_id"`
+	// StopCause is that run's stop cause; empty when CM's stall or lost-worker
+	// detection ended it or the cause is unknown.
+	StopCause string `json:"stop_cause,omitempty"`
+	// Card is the card file as CM stores it now.
+	Card string `json:"card"`
+	// Verify is the card-over-project verify in force.
+	Verify *VerifyConfig `json:"verify,omitempty"`
+	// Subtasks are the card's subtasks, each as its card file.
+	Subtasks []string `json:"subtasks,omitempty"`
+}
+
 // RunKindResult holds the output of the kind named on the status; exactly that
 // field is set.
 type RunKindResult struct {
 	Check       *CheckResult       `json:"check,omitempty"`
 	Investigate *InvestigateResult `json:"investigate,omitempty"`
+	Analyse     *AnalyseResult     `json:"analyse,omitempty"`
 }
 
 // RunUsage is one model's usage over a run kind. A run kind has no MCP key, so
@@ -130,6 +147,12 @@ const (
 	DiagnosisEnvironment = "environment" // outside the card and the ecosystem: credentials, network, the worker image
 	DiagnosisEcosystem   = "ecosystem"   // a bug in ContextMatrix or the agent
 )
+
+// AnalyseResult is the analyse kind's output.
+type AnalyseResult struct {
+	// Findings are the run's friction findings. Never null; empty = none.
+	Findings []FrictionFinding `json:"findings"`
+}
 
 // CardFix is the closed fix shape. At least one field is set.
 type CardFix struct {
