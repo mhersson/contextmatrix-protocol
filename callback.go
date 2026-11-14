@@ -7,6 +7,7 @@ package protocol
 // Valid statuses are decided by CM's validator (running/failed/completed);
 // the protocol does not constrain them.
 type StatusCallbackPayload struct {
+	// CardID is empty on a guidance_pr status, a project-level kind.
 	CardID       string `json:"card_id"`
 	Project      string `json:"project"`
 	WorkerStatus string `json:"worker_status"`

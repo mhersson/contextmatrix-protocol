@@ -1557,6 +1557,23 @@ func TestRunKindPayloadWireShape(t *testing.T) {
 				`"verify":{"command":"./ci/verify"},"subtasks":["---\nid: CM-002\n---\n"]}}`,
 		},
 		{"AnalyseInput zero", AnalyseInput{}, `{"run_id":"","card":""}`},
+		{
+			"guidance_pr",
+			RunKindPayload{
+				Kind: RunKindGuidancePR, Project: "alpha", RepoURL: "https://example.com/r.git", GitToken: "tok",
+				GuidancePR: &GuidancePRInput{
+					ExpectHead: "0123456789abcdef0123456789abcdef01234567",
+					Section:    "Run `./ci/verify` before pushing.",
+					Allowed:    []string{"https://docs.example.net"},
+					Title:      "Update agent guidance", Body: "- Run the verify script first.",
+				},
+			},
+			`{"kind":"guidance_pr","card_id":"","project":"alpha","repo_url":"https://example.com/r.git",` +
+				`"git_token":"tok","guidance_pr":{"expect_head":"0123456789abcdef0123456789abcdef01234567",` +
+				`"section":"Run ` + "`./ci/verify`" + ` before pushing.","allowed":["https://docs.example.net"],` +
+				`"title":"Update agent guidance","body":"- Run the verify script first."}}`,
+		},
+		{"GuidancePRInput zero", GuidancePRInput{}, `{"section":"","title":"","body":""}`},
 	}
 
 	for _, tc := range cases {
@@ -1821,5 +1838,88 @@ func TestAnalyseResultWireShape(t *testing.T) {
 				t.Errorf("wire drift:\n got %s\nwant %s", b, tc.want)
 			}
 		})
+	}
+}
+
+func TestGuidancePRResultWireShape(t *testing.T) {
+	cases := []struct {
+		name string
+		r    GuidancePRResult
+		want string
+	}{
+		{"zero", GuidancePRResult{}, `{"outcome":""}`},
+		{
+			"pushed",
+			GuidancePRResult{
+				Outcome: GuidancePushed, PRURL: "https://example.com/r/pull/7",
+				HeadSHA: "0123456789abcdef0123456789abcdef01234567", File: "AGENTS.md",
+			},
+			`{"outcome":"pushed","pr_url":"https://example.com/r/pull/7",` +
+				`"head_sha":"0123456789abcdef0123456789abcdef01234567","file":"AGENTS.md"}`,
+		},
+		{
+			"refused",
+			GuidancePRResult{Outcome: GuidanceRefused, AbsentFromRepo: []string{"new.example.net"}},
+			`{"outcome":"refused","absent_from_repo":["new.example.net"]}`,
+		},
+		{"stale", GuidancePRResult{Outcome: GuidanceStale}, `{"outcome":"stale"}`},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			b, err := json.Marshal(tc.r)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if string(b) != tc.want {
+				t.Errorf("wire drift:\n got %s\nwant %s", b, tc.want)
+			}
+		})
+	}
+}
+
+func TestGuidancePRStatusKeepsTheEmptyCardID(t *testing.T) {
+	p := StatusCallbackPayload{
+		Project: "alpha", WorkerStatus: "completed", RunID: "alpha-guidance_pr-k3j9x2qa",
+		StopCause: StopCauseDone, Kind: RunKindGuidancePR,
+		Result: &RunKindResult{GuidancePR: &GuidancePRResult{Outcome: GuidanceStale}},
+	}
+
+	b, err := json.Marshal(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := `{"card_id":"","project":"alpha","worker_status":"completed","run_id":"alpha-guidance_pr-k3j9x2qa",` +
+		`"stop_cause":"done","kind":"guidance_pr","result":{"guidance_pr":{"outcome":"stale"}}}`
+	if string(b) != want {
+		t.Errorf("wire drift:\n got %s\nwant %s", b, want)
+	}
+
+	var old statusCallbackV046
+	if err := json.Unmarshal(b, &old); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestGuidanceConstantsAreStable(t *testing.T) {
+	if GuidanceBranchPrefix != "cm/sentinel/" {
+		t.Errorf("GuidanceBranchPrefix %q", GuidanceBranchPrefix)
+	}
+
+	// The map literal proves the values are distinct: duplicate constant keys do not compile.
+	outcomes := map[string]string{
+		GuidancePushed: "pushed", GuidanceUnchanged: "unchanged",
+		GuidanceStale: "stale", GuidanceRefused: "refused",
+	}
+	if len(outcomes) != 4 {
+		t.Fatalf("got %d outcomes, want 4", len(outcomes))
+	}
+
+	for got, want := range outcomes {
+		if got != want {
+			t.Errorf("outcome %q, want %q", got, want)
+		}
 	}
 }

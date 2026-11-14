@@ -35,8 +35,8 @@ index points at the file that owns each part:
 | File            | Contract                                                                              |
 | --------------- | ------------------------------------------------------------------------------------- |
 | `task.go`       | CM→backend task lifecycle: trigger, kill (a card run, or one run kind of the card), stop-all, message (and the structured answers a question-round reply carries, or the action, revision and settings of a mockup reply), promote, end-session. |
-| `runkind.go`    | Run kinds: sandboxed agent runs CM dispatches over `POST /run-kind` (check, investigate and analyse for one card; guidance_pr, reserved until it ships, for a project), their payload with one input per kind, and their results and usage rows, which return on the status callback. |
-| `callback.go`   | Backend→CM callback body: status, the run's id, on a terminal status why the run stopped, and for a run kind its kind, its result (completed and done only) and its per-model usage. |
+| `runkind.go`    | Run kinds: sandboxed agent runs CM dispatches over `POST /run-kind`: check, investigate and analyse for one card, and guidance_pr, which writes a project's standing guidance PR on the `GuidanceBranchPrefix` branch and carries no card ID. Their payload holds one input per kind; their results and usage rows return on the status callback. |
+| `callback.go`   | Backend→CM callback body: status, the run's id, on a terminal status why the run stopped, and for a run kind its kind, its result (completed and done only) and its per-model usage; no card ID on a guidance_pr status. |
 | `stopcause.go`  | Stop causes on a terminal status: the values a worker reports for its own run, and the values only the backend host sets (killed, shutdown, timeout, infrastructure). No membership check: consumers read an unknown value as unknown. |
 | `selection.go`  | Model-selection inputs shipped to the agent backend: candidates (prices, priors, creator), favorites, blacklist, per-role tier bars, and the best-value price headroom. |
 | `selection/`    | The selector: tier ladders per role, descent, price band, best value, favorites, panel seats, reachability, and the pinned-slug to Claude Code model ID mapping. Pure functions over the types in `selection.go` and model slugs. |
@@ -49,6 +49,6 @@ index points at the file that owns each part:
 | `taskskills.go` | Task-skills repo pointer served by CM to the backends: clone URL, ref, and a short-lived clone token. |
 | `verify.go`     | Operator-declared verify gate (command, timeout, env allowlist), carried by the trigger and run-kind payloads and the investigate result's fix. |
 | `codes.go`      | Stable `ErrorResponse.Code` constants - branch on these, not on `Message`.            |
-| `response.go`   | Webhook response bodies: success/error, container list (each run's kind; absent for a card run), stop-all, health (the build's version, commit, build time and recent changes, and the default worker image's revision), image list. |
+| `response.go`   | Webhook response bodies: success/error, container list (each run's kind; absent for a card run; no card ID for guidance_pr), stop-all, health (the build's version, commit, build time and recent changes, and the default worker image's revision), image list. |
 | `changelog/`    | The build's change list: the git arguments every build runs (`GitLogArgs`), the 20-entry limit, and `Parse`, which keeps merged PRs newest first with merge dates in UTC and drops Dependabot and the ci, docs, chore, build, test, refactor and style types. |
 | `hmac.go`       | HMAC-SHA256 signing/verification, header names, and clock-skew windows.               |
